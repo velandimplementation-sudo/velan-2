@@ -738,31 +738,6 @@ if (activeFilter === 'vendor') {
 
     '<tr><td colspan="9"><div class="empty">No items match filter</div></td></tr>';
 }
-
-/* ── FILTER / STAGE CONTROLS ─────────────────────── */
-function setFilter(f) {
-  activeFilter = f;
-  applyFilters();
-  updateFilterBtns();
-}
-
-function updateFilterBtns() {
-  var ids = ['fAll','fInhouse','fVendor'];
-  ids.forEach(function(id){ var el = document.getElementById(id); if (!el) return; el.classList.remove('active'); });
-  var map = { all: 'fAll', inhouse: 'fInhouse', vendor: 'fVendor' };
-  var btnId = map[activeFilter];
-  if (btnId) {
-    var el = document.getElementById(btnId);
-    if (el) el.classList.add('active');
-  }
-}
-
-function toggleStage(stage) {
-  activeStage = activeStage === stage ? null : stage;
-  renderPipeline();
-  applyFilters();
-  updateFilterBtns();
-}
 /* ── DWELL TICK ──────────────────────────────────── */
 setInterval(function() {
   DATA.items = DATA.items.map(function(i) {
