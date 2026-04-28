@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Velan Metrology – Production Dashboard</title>
+
+<!-- React & ReactDOM -->
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script><script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+:root{
+  --bg:#07090d;--bg2:#0d1117;--bg3:#131920;--bg4:#181f28;--bg5:#1c2530;
+  --b1:#1e2a35;--b2:#243040;--b3:#2e3d50;
+  --t1:#e2eaf5;--t2:#8899b0;--t3:#4d6070;--t4:#2d3f50;
+  --acc:#00e5b4;--acc2:#0099ff;--acc3:#7c6fff;
+  --warn:#f59e0b;--danger:#f43f5e;--success:#10b981;
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:13px}
+body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+
+/* TOPBAR */
+.topbar{
+  position:sticky;top:0;z-index:200;
+  background:rgba(7,9,13,.92);
+  border-bottom:1px solid var(--b1);
+  -webkit-backdrop-filter:blur(16px);
+  backdrop-filter:blur(16px);
+  padding:0 1.5rem;height:52px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-name{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:2px;color:var(--acc)}
+.brand-sub{font-family:var(--mono);font-size:9px;color:var(--t3);letter-spacing:1px;text-transform:uppercase}
+.brand-sep{width:1px;height:28px;background:var(--b2)}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.live-indicator{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;border:1px solid var(--b2);background:var(--bg3)}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--t3);transition:all .3s}
+.live-dot.on{background:var(--acc);box-shadow:0 0 8px var(--acc)}
+.live-label{font-family:var(--mono);font-size:10px;color:var(--t3)}
+.live-label.on{color:var(--acc)}
+.updated-tag{font-family:var(--mono);font-size:10px;color:var(--t3)}
+.btn{cursor:pointer;padding:5px 12px;border-radius:6px;border:1px solid var(--b2);background:var(--bg3);color:var(--t2);font-family:var(--mono);font-size:11px;transition:all .15s;white-space:nowrap}
+.btn:hover{border-color:var(--acc);color:var(--acc)}
+.btn.primary{background:var(--acc);color:#000;border-color:var(--acc);font-weight:600}
+.btn.primary:hover{opacity:.9}
+.btn.active{background:rgba(0,229,180,.1);border-color:var(--acc);color:var(--acc)}
+
+/* ALERTS */
+.alert-zone{padding:.5rem 1.5rem 0;display:flex;flex-direction:column;gap:5px}
+.alert{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 14px;border-radius:7px;
+  font-size:11px;font-family:var(--mono);
+  animation:slideIn .2s ease;cursor:pointer;
+}
+.alert.danger{background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.25);color:#fda4af}
+.alert.warning{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);color:#fcd34d}
+.alert.info{background:rgba(0,229,180,.06);border:1px solid rgba(0,229,180,.15);color:var(--acc)}
+.alert-x{margin-left:auto;color:var(--t3);padding:2px 4px;font-size:13px}
+.alert-x:hover{color:var(--t1)}
+@keyframes slideIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+
+/* MAIN GRID */
+.main{padding:1rem 1.5rem;display:flex;flex-direction:column;gap:1rem}
+
+/* SECTION */
+.section-hdr{
+  display:flex;align-items:center;gap:8px;
+  margin-bottom:.6rem;
+}
+.section-hdr-label{
+  font-family:var(--mono);font-size:10px;font-weight:600;
+  color:var(--t3);text-transform:uppercase;letter-spacing:1.5px;
+  white-space:nowrap;
+}
+.section-hdr-line{flex:1;height:1px;background:var(--b1)}
+.section-hdr-tag{font-family:var(--mono);font-size:9px;color:var(--t4);padding:2px 6px;border:1px solid var(--b1);border-radius:3px}
+
+/* CARD */
+.card{background:var(--bg2);border:1px solid var(--b1);border-radius:10px;padding:1rem 1.25rem;overflow:hidden}
+.card-sm{background:var(--bg2);border:1px solid var(--b1);border-radius:10px;padding:.875rem 1rem}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.kpi{
+  background:var(--bg2);border:1px solid var(--b1);border-radius:10px;
+  padding:14px 16px;position:relative;overflow:hidden;
+  transition:border-color .2s,transform .1s;cursor:default;
+}
+.kpi:hover{border-color:var(--b2);transform:translateY(-1px)}
+.kpi-accent{position:absolute;top:0;left:0;right:0;height:2px}
+.kpi-label{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-family:var(--mono)}
+.kpi-num{font-family:var(--mono);font-size:28px;font-weight:700;line-height:1;margin-bottom:4px}
+.kpi-sub{font-size:10px;color:var(--t3);font-family:var(--mono)}
+.c-acc{color:var(--acc)}.c-acc2{color:var(--acc2)}.c-warn{color:var(--warn)}.c-danger{color:var(--danger)}.c-acc3{color:var(--acc3)}.c-t2{color:var(--t2)}
+
+/* PIPELINE */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.pipeline-list{display:flex;flex-direction:column;gap:4px;max-height:320px;overflow-y:auto}
+.pipe-row{
+  display:flex;align-items:center;gap:8px;padding:5px 8px;
+  border-radius:6px;cursor:pointer;border:1px solid transparent;
+  transition:all .1s;
+}
+.pipe-row:hover{background:var(--bg3);border-color:var(--b1)}
+.pipe-row.sel{background:rgba(0,229,180,.06);border-color:rgba(0,229,180,.25)}
+.pipe-stage{font-family:var(--mono);font-size:11px;font-weight:600;width:90px;min-width:90px;color:var(--t1)}
+.pipe-bar-bg{flex:1;height:5px;background:var(--b1);border-radius:3px;overflow:hidden}
+.pipe-bar-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.pipe-count{font-family:var(--mono);font-size:11px;color:var(--t2);width:22px;text-align:right}
+.pipe-flag{width:18px;font-size:9px;color:var(--danger);text-align:center}
+
+/* BOTTLENECK */
+.bn-list{display:flex;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto}
+.bn-item{display:flex;flex-direction:column;gap:4px}
+.bn-top{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.bn-name{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--t1)}
+.bn-right{display:flex;align-items:center;gap:6px}
+.bn-meta{font-family:var(--mono);font-size:9px;color:var(--t3)}
+.badge{display:inline-block;padding:2px 6px;border-radius:3px;font-size:9px;font-family:var(--mono);font-weight:700;letter-spacing:.5px}
+.badge-hot{background:rgba(244,63,94,.15);color:#fda4af}
+.badge-warn{background:rgba(245,158,11,.12);color:#fcd34d}
+.badge-ok{background:rgba(16,185,129,.1);color:#6ee7b7}
+.bn-bar-bg{height:3px;background:var(--b1);border-radius:2px;overflow:hidden}
+.bn-bar-fill{height:100%;border-radius:2px;transition:width .5s}
+
+/* ORDERS */
+.order-cards{display:flex;flex-direction:column;gap:8px}
+.order-card{background:var(--bg3);border:1px solid var(--b1);border-radius:8px;overflow:hidden;transition:border-color .15s}
+.order-card:hover{border-color:var(--b2)}
+.order-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;-webkit-user-select:none;user-select:none}
+.order-risk{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.order-risk.ON_TRACK{background:var(--acc)}
+.order-risk.AT_RISK{background:var(--warn);box-shadow:0 0 6px var(--warn)}
+.order-risk.OVERDUE{background:var(--danger);box-shadow:0 0 6px var(--danger)}
+.order-po{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--acc2);min-width:100px}
+.order-cust{font-size:12px;color:var(--t1);flex:1}
+.order-pct-num{font-family:var(--mono);font-size:12px;font-weight:700;min-width:36px;text-align:right}
+.order-arr{color:var(--t3);font-size:11px;transition:transform .15s}
+.order-arr.open{transform:rotate(90deg)}
+.order-prog-strip{height:2px;background:var(--b1);margin:0 14px}
+.order-prog-fill{height:100%;transition:width .5s}
+.order-body{display:none;padding:8px 14px 14px}
+.order-body.open{display:block}
+.order-stats-row{display:flex;gap:16px;padding:8px 0;border-bottom:1px solid var(--b1);margin-bottom:10px;flex-wrap:wrap}
+.ostat .l{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.ostat .v{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--t1)}
+
+/* FULL TABLE */
+.table-controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.search-box{position:relative;flex:1;min-width:180px;max-width:300px}
+.search-ico{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--t3);font-size:13px;pointer-events:none}
+.search-inp{
+  width:100%;padding:6px 10px 6px 28px;
+  background:var(--bg3);border:1px solid var(--b1);border-radius:6px;
+  color:var(--t1);font-family:var(--mono);font-size:11px;outline:none;
+  transition:border-color .15s;
+}
+.search-inp:focus{border-color:var(--acc2)}
+.search-inp::placeholder{color:var(--t3)}
+.item-count{font-family:var(--mono);font-size:10px;color:var(--t3);margin-left:4px}
+.table-wrap{overflow:auto;max-height:500px;border-radius:6px;border:1px solid var(--b1)}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{
+  position:sticky;top:0;z-index:10;
+  text-align:left;padding:7px 10px;
+  font-size:10px;color:var(--t3);font-weight:500;
+  text-transform:uppercase;letter-spacing:.7px;
+  background:var(--bg3);border-bottom:1px solid var(--b1);
+  white-space:nowrap;
+}
+.tbl td{padding:6px 10px;border-bottom:1px solid var(--b1);vertical-align:middle;color:var(--t1)}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover td{background:rgba(255,255,255,.015)}
+.tbl tr.row-blocked td{background:rgba(244,63,94,.03)}
+.tbl tr.row-rework td{background:rgba(245,158,11,.03)}
+
+/* BADGES */
+.op{display:inline-block;padding:2px 7px;border-radius:4px;font-family:var(--mono);font-size:10px;font-weight:600}
+.op-vendor{background:rgba(124,111,255,.15);color:#b4adff}
+.op-done{background:rgba(16,185,129,.12);color:#6ee7b7}
+.op-warn{background:rgba(245,158,11,.12);color:#fcd34d}
+.op-blue{background:rgba(0,153,255,.12);color:#7dd3fc}
+.op-muted{background:var(--bg4);color:var(--t2)}
+.op-danger{background:rgba(244,63,94,.12);color:#fda4af}
+.loc{display:inline-block;padding:1px 6px;border-radius:3px;font-family:var(--mono);font-size:9px}
+.loc-v{background:rgba(124,111,255,.1);color:#b4adff}
+.loc-i{background:rgba(16,185,129,.07);color:#6ee7b7}
+.tag-flag{display:inline-block;padding:1px 5px;border-radius:2px;font-family:var(--mono);font-size:9px;font-weight:700;margin-left:4px}
+.tag-blocked{background:rgba(244,63,94,.15);color:#fda4af}
+.tag-rework{background:rgba(245,158,11,.12);color:#fcd34d}
+
+/* SAE PROGRESS */
+.sae-wrap{display:flex;flex-direction:column;gap:3px}
+.sae-dots{display:flex;align-items:center;gap:0}
+.sae-dot{width:6px;height:6px;border-radius:50%;border:1px solid var(--b2);background:var(--bg4);flex-shrink:0}
+.sae-dot.done{background:var(--acc);border-color:var(--acc)}
+.sae-dot.curr{background:var(--warn);border-color:var(--warn);box-shadow:0 0 4px var(--warn)}
+.sae-conn{flex:1;height:1px;background:var(--b2);min-width:6px;max-width:14px}
+.sae-conn.done{background:var(--acc)}
+.sae-info{font-family:var(--mono);font-size:9px;color:var(--t3)}
+
+/* DWELL */
+.dwell{font-family:var(--mono);font-size:11px}
+.dwell-ok{color:var(--t3)}
+.dwell-warn{color:var(--warn)}
+.dwell-hot{color:var(--danger)}
+
+/* VENDOR PANEL */
+.vendor-wrap{overflow:auto;max-height:340px}
+
+/* LOADING / EMPTY */
+.spin-wrap{display:flex;align-items:center;justify-content:center;padding:2.5rem;gap:8px;color:var(--t3);font-family:var(--mono);font-size:11px}
+.spin{width:14px;height:14px;border:2px solid var(--b2);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{padding:1.5rem;text-align:center;color:var(--t3);font-family:var(--mono);font-size:11px}
+
+/* RESPONSIVE */
+@media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:800px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.two-col{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="brand">
+    <div>
+      <div class="brand-name">VELAN</div>
+      <div class="brand-sub">Production Dashboard</div>
+    </div>
+    <div class="brand-sep"></div>
+    <div class="updated-tag" id="updatedTag">–</div>
+  </div>
+  <div class="topbar-right">
+    <div class="live-indicator">
+      <div class="live-dot" id="liveDot"></div>
+      <div class="live-label" id="liveLabel">offline</div>
+    </div>
+    <button class="btn" onclick="manualRefresh()">↻ Refresh</button>
+  </div>
+</header>
+
+<!-- ALERTS -->
+<div class="alert-zone" id="alertZone"></div>
+
+<!-- UPLOAD MODULE -->
+<div id="uploadRoot" style="background: var(--bg); padding: 0 1.5rem; padding-top: 1rem;"></div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- KPIs -->
+  <section>
+    <div class="section-hdr">
+      <div class="section-hdr-label">Overview</div>
+      <div class="section-hdr-line"></div>
+    </div>
+    <div class="kpi-grid" id="kpiGrid">
+      <div class="kpi"><div class="spin-wrap"><div class="spin"></div></div></div>
+    </div>
+  </section>
+
+  <!-- PIPELINE + BOTTLENECK -->
+  <section class="two-col">
+    <div class="card">
+      <div class="section-hdr">
+        <div class="section-hdr-label">Stage Pipeline</div>
+        <div class="section-hdr-line"></div>
+        <div class="section-hdr-tag">click to filter</div>
+      </div>
+      <div class="pipeline-list" id="pipelineList">
+        <div class="spin-wrap"><div class="spin"></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-hdr">
+        <div class="section-hdr-label">Bottleneck Analysis</div>
+        <div class="section-hdr-line"></div>
+        <div class="section-hdr-tag" id="bnSummaryTag">–</div>
+      </div>
+      <div class="bn-list" id="bnList">
+        <div class="spin-wrap"><div class="spin"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ORDERS + VENDOR -->
+  <section class="two-col">
+    <div class="card">
+      <div class="section-hdr">
+        <div class="section-hdr-label">Order Status</div>
+        <div class="section-hdr-line"></div>
+      </div>
+      <div class="order-cards" id="orderCards">
+        <div class="spin-wrap"><div class="spin"></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-hdr">
+        <div class="section-hdr-label">Vendor Tracker</div>
+        <div class="section-hdr-line"></div>
+        <div class="section-hdr-tag" style="color:var(--danger)">red = overdue &gt;48h</div>
+      </div>
+      <div class="vendor-wrap">
+        <table class="tbl" id="vendorTbl">
+          <thead><tr><th>Component</th><th>PO</th><th>Customer</th><th>Stage</th><th>Dwell</th><th>Status</th></tr></thead>
+          <tbody id="vendorBody"><tr><td colspan="6"><div class="spin-wrap"><div class="spin"></div></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ALL COMPONENTS -->
+  <section>
+    <div class="card">
+      <div class="section-hdr">
+        <div class="section-hdr-label">All Components</div>
+        <div class="section-hdr-line"></div>
+      </div>
+      <div class="table-controls">
+        <div class="search-box">
+          <span class="search-ico">⌕</span>
+          <input class="search-inp" id="searchInp" type="text" placeholder="search component, PO, customer…" oninput="applyFilters()">
+        </div>
+        <button class="btn" id="fAll"     onclick="setFilter('all')">All</button>
+        <button class="btn" id="fInhouse" onclick="setFilter('inhouse')">Inhouse</button>
+        <button class="btn" id="fVendor"  onclick="setFilter('vendor')">Vendor</button>
+        <span class="item-count" id="itemCount"></span>
+      </div>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Component</th><th>Order</th><th>Customer</th><th>QTY</th>
+              <th>Stage</th><th>Location</th><th>Dwell</th><th>SAE Progress</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="mainBody"><tr><td colspan="9"><div class="spin-wrap"><div class="spin"></div></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /main -->
+
+<script>
+const API = 'http://localhost:3001/api';
+const WS  = 'ws://localhost:3001';
+
+var DATA = { kpi:{}, stages:[], bottlenecks:[], orders:[], vendors:[], items:[] };
+var activeFilter = 'all';
+var activeStage  = null;
+var ws = null;
+
+/* ── helpers ─────────────────────────────────────── */
+function escapeHTML(str) {
+  return String(str).replace(/[&<>"']/g, function(s) {
+    return {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[s];
+  });
+}
+function fmtDwell(h) {
+  if (h == null) return '<span class="dwell dwell-ok">—</span>';
+  var cls = h > 72 ? 'dwell-hot' : h > 48 ? 'dwell-warn' : 'dwell-ok';
+  var str;
+  if (h < 1) { str = Math.round(h * 60) + 'm'; }
+  else {
+    var d = Math.floor(h / 24), r = Math.round(h % 24);
+    str = d > 0 ? d + 'd ' + r + 'h' : Math.round(h) + 'h';
+  }
+  return '<span class="dwell ' + cls + '">' + str + '</span>';
+}
+
+function opBadge(op) {
+  if (!op) return '';
+  var cls;
+  if (['PTV','HTV','BLV','BLI_V'].indexOf(op) > -1) cls = 'op-vendor';
+  else if (['ASS','STOCK','READY','STORES'].indexOf(op) > -1) cls = 'op-done';
+  else if (op === 'JBI' || op === 'PRE ASS') cls = 'op-warn';
+  else if (['CG','SG','M1','LATHE'].indexOf(op) > -1) cls = 'op-blue';
+  else if (op === 'TO BE ORDER') cls = 'op-danger';
+  else cls = 'op-muted';
+  return '<span class="op ' + cls + '">' + op + '</span>';
+}
+
+function locBadge(loc) {
+  return loc === 'WITH VENDOR'
+    ? '<span class="loc loc-v">VENDOR</span>'
+    : '<span class="loc loc-i">INHOUSE</span>';
+}
+
+function riskColor(r) {
+  return r === 'ON_TRACK' ? 'var(--acc)' : r === 'AT_RISK' ? 'var(--warn)' : 'var(--danger)';
+}
+
+function saeProg(p) {
+  if (!p) return '<span style="color:var(--t3);font-size:10px">—</span>';
+  var dots = '';
+  for (var i = 0; i < p.steps.length; i++) {
+    if (i > 0) dots += '<div class="sae-conn ' + (i <= p.step_index ? 'done' : '') + '"></div>';
+    var dc = i < p.step_index ? 'done' : i === p.step_index ? 'curr' : '';
+    dots += '<div class="sae-dot ' + dc + '" title="' + p.steps[i] + '"></div>';
+  }
+  return '<div class="sae-wrap"><div class="sae-dots">' + dots + '</div>'
+    + '<div class="sae-info">' + p.pct + '% · ' + p.days_remaining + 'd left → ' + p.next_step + '</div></div>';
+}
+
+function stageColor(s) {
+  var V=['PTV','HTV','BLV'], D=['ASS','STOCK','READY','STORES'];
+  if (V.indexOf(s) > -1) return '#7c6fff';
+  if (D.indexOf(s) > -1) return '#10b981';
+  if (s === 'JBI') return '#f59e0b';
+  if (s === 'RM')  return '#4d6070';
+  if (s === 'TO BE ORDER') return '#f43f5e';
+  return '#00e5b4';
+}
+
+/* ── fetch ───────────────────────────────────────── */
+function fetchSafe(url) {
+  return fetch(url)
+    .then(function (r) {
+      if (!r.ok) throw new Error('API error: ' + url);
+      return r.json();
+    })
+    .catch(function (err) {
+      console.warn('API failed:', url, err.message);
+      return null; // prevents crash
+    });
+}
+function fetchAll() {
+  return Promise.all([
+    fetchSafe(API + '/kpi'),
+    fetchSafe(API + '/stages'),
+    fetchSafe(API + '/bottlenecks'),
+    fetchSafe(API + '/orders'),
+    fetchSafe(API + '/vendors'),
+    fetchSafe(API + '/items'),
+  ])
+  .then(function (res) {
+    // fallback to safe defaults if API fails
+    DATA = {
+      kpi: res[0] || {},
+      stages: res[1] || [],
+      bottlenecks: res[2] || [],
+      orders: res[3] || [],
+      vendors: res[4] || [],
+      items: res[5] || []
+    };
+
+    renderAll();
+
+    document.getElementById('updatedTag').textContent =
+      'last updated ' + new Date().toLocaleTimeString();
+  })
+  .catch(function (e) {
+    document.getElementById('updatedTag').textContent =
+      '⚠️ API offline — start server';
+    console.error('FetchAll error:', e);
+  });
+}
+function manualRefresh() {
+  fetch(API + '/refresh', { method: 'POST' })
+    .then(function () {
+      return fetchAll();
+    })
+    .catch(function () {
+      showAlert('⚠️ Refresh failed — server not reachable', 'warning');
+    });
+}
+
+/* ── websocket ───────────────────────────────────── */
+function connectWS() {
+  ws = new WebSocket(WS);
+  ws.onopen  = function() { setLive(true); };
+  ws.onclose = function() { setLive(false); setTimeout(connectWS, 5000); };
+  ws.onerror = function() { setLive(false); };
+  ws.onmessage = function(e) {
+    var m = JSON.parse(e.data);
+    if (m.type === 'refresh') {
+      fetchAll().then(function() { showAlert('Excel file changed — dashboard updated', 'info'); });
+    }
+    if (m.type === 'sync') {
+      // sync event from live tracker
+      if (m.status === 'success') {
+        fetchAll().then(function() { showAlert('Live sync completed — dashboard updated', 'success'); });
+      } else {
+        showAlert('Live sync error: ' + (m.error || 'unknown'), 'warning');
+      }
+    }
+  };
+}
+
+function setLive(on) {
+  document.getElementById('liveDot').className  = 'live-dot'   + (on ? ' on' : '');
+  document.getElementById('liveLabel').className = 'live-label' + (on ? ' on' : '');
+  document.getElementById('liveLabel').textContent = on ? 'live' : 'offline';
+}
+
+/* ── alerts ──────────────────────────────────────── */
+function showAlert(msg, type) {
+  var z = document.getElementById('alertZone');
+  var el = document.createElement('div');
+  el.className = 'alert ' + type;
+  el.innerHTML = msg + '<span class="alert-x" onclick="this.parentElement.remove()">✕</span>';
+  z.prepend(el);
+  setTimeout(function() { if (el.parentElement) el.remove(); }, 7000);
+}
+
+function renderAlerts() {
+  var z = document.getElementById('alertZone');
+  z.innerHTML = '';
+  var bns = DATA.bottlenecks.filter(function(b) { return b.is_bottleneck && ['STOCK','RM'].indexOf(b.stage) === -1; });
+  if (bns.length) {
+    var top = bns[0];
+    showAlert('<strong>BOTTLENECK:</strong> ' + top.stage + ' — ' + top.item_count + ' items, avg ' + top.avg_dwell_hours + 'h dwell' + (bns.length > 1 ? ' <span style="color:var(--t3)">+ ' + (bns.length - 1) + ' more stages</span>' : ''), 'danger');
+  }
+  DATA.items.filter(function(i){ return i.is_blocked; }).forEach(function(b) {
+    showAlert('<strong>PROCUREMENT NEEDED:</strong> ' + b.product_name + ' (' + b.customer + ') — ' + (b.status2 || 'TO BE ORDERED'), 'warning');
+  });
+}
+
+/* ── KPI ─────────────────────────────────────────── */
+function renderKPI() {
+  var k = DATA.kpi;
+  var days = Math.abs(k.days_to_may5);
+  var daysStr = k.days_to_may5 < 0 ? days + 'd overdue' : days + 'd to May 5';
+  var daysCls = k.days_to_may5 < 0 ? 'c-danger' : k.days_to_may5 < 5 ? 'c-warn' : 'c-acc';
+  var daysBg  = k.days_to_may5 < 0 ? 'var(--danger)' : k.days_to_may5 < 5 ? 'var(--warn)' : 'var(--acc)';
+
+  document.getElementById('kpiGrid').innerHTML = [
+    ['c-acc2',  'var(--acc2)',    'Total Components', k.total,                 k.active_orders + ' active orders'],
+    ['c-acc',   'var(--acc)',     'Completed',        k.done,                  k.inprog + ' still in progress'],
+    ['c-acc3',  'var(--acc3)',    'With Vendor',      k.withVend,              'external processing'],
+    ['c-danger','var(--danger)', 'Bottleneck Stages', k.bottleneck_count,      'top: ' + (k.top_bottleneck || '—')],
+    ['c-warn',  'var(--warn)',   'Blocked / Rework',  k.blocked + k.rework,   k.blocked + ' blocked, ' + k.rework + ' rework'],
+    [daysCls,   daysBg,          'Delivery',          days,                    daysStr],
+  ].map(function(d) {
+    return '<div class="kpi"><div class="kpi-accent" style="background:' + d[1] + '"></div>'
+      + '<div class="kpi-label">' + d[2] + '</div>'
+      + '<div class="kpi-num ' + d[0] + '">' + d[3] + '</div>'
+      + '<div class="kpi-sub">' + d[4] + '</div></div>';
+  }).join('');
+}
+
+/* ── PIPELINE ────────────────────────────────────── */
+function renderPipeline() {
+  var max = Math.max.apply(null, DATA.stages.map(function(s){ return s.count; }).concat([1]));
+  var bns = {};
+  DATA.bottlenecks.filter(function(b){ return b.is_bottleneck; }).forEach(function(b){ bns[b.stage] = true; });
+
+  document.getElementById('pipelineList').innerHTML = DATA.stages.map(function(s) {
+    var pct = Math.round(s.count / max * 100);
+    var col = stageColor(s.stage);
+    var sel = activeStage === s.stage ? ' sel' : '';
+    var flag = bns[s.stage] ? '<div class="pipe-flag">●</div>' : '<div class="pipe-flag"></div>';
+    return '<div class="pipe-row' + sel + '" onclick="toggleStage(\'' + s.stage + '\')">'
+      + '<div class="pipe-stage">' + s.stage + '</div>'
+      + '<div class="pipe-bar-bg"><div class="pipe-bar-fill" style="width:' + pct + '%;background:' + col + '"></div></div>'
+      + '<div class="pipe-count">' + s.count + '</div>'
+      + flag
+      + '</div>';
+  }).join('') || '<div class="empty">No data</div>';
+}
+
+/* ── BOTTLENECK ──────────────────────────────────── */
+function renderBN() {
+  var max = Math.max.apply(null, DATA.bottlenecks.map(function(b){ return b.avg_dwell_hours; }).concat([1]));
+  var hotCount = DATA.bottlenecks.filter(function(b){ return b.is_bottleneck; }).length;
+  document.getElementById('bnSummaryTag').textContent = hotCount + ' critical stages';
+
+  document.getElementById('bnList').innerHTML = DATA.bottlenecks.map(function(b) {
+    var pct = Math.round(b.avg_dwell_hours / max * 100);
+    var col = b.avg_dwell_hours > 72 ? 'var(--danger)' : b.avg_dwell_hours > 24 ? 'var(--warn)' : 'var(--acc)';
+    var badgeCls = b.avg_dwell_hours > 72 ? 'badge-hot' : b.is_bottleneck ? 'badge-warn' : 'badge-ok';
+    var badgeTxt = b.avg_dwell_hours > 72 ? 'CRITICAL' : b.is_bottleneck ? 'WATCH' : 'OK';
+    return '<div class="bn-item">'
+      + '<div class="bn-top">'
+      + '<span class="bn-name">' + b.stage + '</span>'
+      + '<div class="bn-right">'
+      + '<span class="badge ' + badgeCls + '">' + badgeTxt + '</span>'
+      + '<span class="bn-meta">' + b.item_count + ' items · avg ' + b.avg_dwell_hours + 'h · max ' + b.max_dwell_hours + 'h</span>'
+      + '</div></div>'
+      + '<div class="bn-bar-bg"><div class="bn-bar-fill" style="width:' + pct + '%;background:' + col + '"></div></div>'
+      + '</div>';
+  }).join('') || '<div class="empty">No bottlenecks</div>';
+}
+
+/* ── ORDERS ──────────────────────────────────────── */
+function renderOrders() {
+  document.getElementById('orderCards').innerHTML = DATA.orders.map(function(o, idx) {
+    var rc = riskColor(o.risk);
+    var items = DATA.items.filter(function(i){ return String(i.order_id) === String(o.order_id); });
+    var rows = items.slice(0, 40).map(function(i) {
+      return '<tr class="' + (i.is_blocked ? 'row-blocked' : i.is_rework ? 'row-rework' : '') + '">'
+        + '<td style="font-size:11px">' + i.product_name
+          + (i.is_blocked ? '<span class="tag-flag tag-blocked">BLOCKED</span>' : '')
+          + (i.is_rework  ? '<span class="tag-flag tag-rework">REWORK</span>' : '')
+          + '</td>'
+        + '<td style="font-family:var(--mono);font-size:10px;color:var(--t3)">' + i.qty + '</td>'
+        + '<td>' + opBadge(i.current_op) + '</td>'
+        + '<td>' + locBadge(i.location) + '</td>'
+        + '<td>' + fmtDwell(i.dwell_hours) + '</td>'
+        + '<td>' + saeProg(i.progress) + '</td>'
+        + '</tr>';
+    }).join('');
+
+    return '<div class="order-card" id="oc-' + idx + '">'
+      + '<div class="order-hdr" onclick="toggleOrder(' + idx + ')">'
+      + '<div class="order-risk ' + o.risk + '"></div>'
+      + '<div class="order-po">' + (o.po_number || 'ORDER ' + o.order_id) + '</div>'
+      + '<div class="order-cust">' + o.customer + '</div>'
+      + '<div class="order-pct-num" style="color:' + rc + '">' + o.pct + '%</div>'
+      + '<div class="order-arr" id="arr-' + idx + '">▸</div>'
+      + '</div>'
+      + '<div class="order-prog-strip"><div class="order-prog-fill" style="width:' + o.pct + '%;background:' + rc + '"></div></div>'
+      + '<div class="order-body" id="ob-' + idx + '">'
+      + '<div class="order-stats-row">'
+      + '<div class="ostat"><div class="l">Total</div><div class="v">' + o.total + '</div></div>'
+      + '<div class="ostat"><div class="l">Done</div><div class="v" style="color:var(--acc)">' + o.done + '</div></div>'
+      + '<div class="ostat"><div class="l">WIP</div><div class="v" style="color:var(--warn)">' + o.wip + '</div></div>'
+      + '<div class="ostat"><div class="l">Vendor</div><div class="v" style="color:var(--acc3)">' + o.vendor + '</div></div>'
+      + (o.blocked ? '<div class="ostat"><div class="l">Blocked</div><div class="v" style="color:var(--danger)">' + o.blocked + '</div></div>' : '')
+      + '<div class="ostat"><div class="l">Risk</div><div class="v" style="color:' + rc + '">' + o.risk + '</div></div>'
+      + '</div>'
+      + '<div style="overflow:auto">'
+      + '<table class="tbl"><thead><tr><th>Component</th><th>QTY</th><th>Stage</th><th>Location</th><th>Dwell</th><th>Process</th></tr></thead>'
+      + '<tbody>' + rows + '</tbody></table>'
+      + '</div>'
+      + '</div></div>';
+  }).join('') || '<div class="empty">No orders found</div>';
+}
+
+function toggleOrder(idx) {
+  var body = document.getElementById('ob-' + idx);
+  var arr  = document.getElementById('arr-' + idx);
+  var open = body.classList.toggle('open');
+  arr.className = 'order-arr' + (open ? ' open' : '');
+}
+
+/* ── VENDOR TABLE ────────────────────────────────── */
+function renderVendors() {
+  document.getElementById('vendorBody').innerHTML = DATA.vendors.map(function(v) {
+    return '<tr class="' + (v.overdue ? 'row-blocked' : '') + '">'
+      + '<td style="font-size:11px">' + v.product_name + '</td>'
+      + '<td style="font-family:var(--mono);font-size:10px;color:var(--acc2)">' + (v.po_number || '–') + '</td>'
+      + '<td style="font-size:11px;color:var(--t2)">' + v.customer + '</td>'
+      + '<td>' + opBadge(v.current_op) + '</td>'
+      + '<td>' + fmtDwell(v.dwell_hours) + (v.overdue ? ' <span class="tag-flag tag-blocked">OVERDUE</span>' : '') + '</td>'
+      + '<td style="font-size:10px;color:var(--t3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + (v.status2 || v.status1 || '') + '">' + (v.status2 || v.status1 || '—') + '</td>'
+      + '</tr>';
+  }).join('') || '<tr><td colspan="6"><div class="empty">No vendor items</div></td></tr>';
+}
+
+/* ── MAIN TABLE ──────────────────────────────────── */
+function applyFilters() {
+  var q = (document.getElementById('searchInp').value || '').toLowerCase();
+  var items = (DATA.items || []).slice();
+  console.log('Filter:', activeFilter, 'Stage:', activeStage);
+
+  if (activeStage && activeFilter === 'all') {
+  items = items.filter(function(i){
+    return i.current_op === activeStage;
+  });
+}
+if (activeFilter === 'inhouse') {
+  items = items.filter(function(i){
+    return (i.location || '').toLowerCase().includes('inhouse');
+  });
+}
+
+if (activeFilter === 'vendor') {
+  items = items.filter(function(i){
+    return (i.location || '').toLowerCase().includes('vendor');
+  });
+}
+  if (q) {
+    items = items.filter(function(i){
+      return (i.product_name || '').toLowerCase().includes(q)
+        || (i.customer || '').toLowerCase().includes(q)
+        || String(i.po_number || '').toLowerCase().includes(q);
+    });
+  }
+
+  document.getElementById('itemCount').textContent =
+  items.length + ' items (showing ' + Math.min(items.length, 200) + ')';
+
+  document.getElementById('mainBody').innerHTML =
+    items.slice(0, 200).map(function(i) {
+
+      var product = escapeHTML(i.product_name || '');
+      var customer = escapeHTML(i.customer || '');
+      var po = escapeHTML(i.po_number || '–');
+      var status = escapeHTML(i.status2 || i.status1 || '—');
+
+      return '<tr class="' + (i.is_blocked ? 'row-blocked' : i.is_rework ? 'row-rework' : '') + '">'
+        + '<td style="font-size:11px;white-space:nowrap">' 
+          + product
+          + (i.is_blocked ? '<span class="tag-flag tag-blocked">BLOCKED</span>' : '')
+          + (i.is_rework  ? '<span class="tag-flag tag-rework">REWORK</span>'  : '')
+          + '</td>'
+
+        + '<td style="font-family:var(--mono);font-size:10px;color:var(--acc2)">' 
+          + po + '</td>'
+
+        + '<td style="font-size:11px;color:var(--t2)">' 
+          + customer + '</td>'
+
+        + '<td style="font-family:var(--mono);font-size:10px;color:var(--t3)">' 
+          + (i.qty || 0) + '</td>'
+
+        + '<td>' + opBadge(i.current_op) + '</td>'
+
+        + '<td>' + locBadge(i.location) + '</td>'
+
+        + '<td>' + fmtDwell(i.dwell_hours) + '</td>'
+
+        + '<td>' + saeProg(i.progress) + '</td>'
+
+        + '<td style="font-size:10px;color:var(--t3);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' 
+          + status + '">' + status + '</td>'
+
+        + '</tr>';
+    }).join('') ||
+
+    '<tr><td colspan="9"><div class="empty">No items match filter</div></td></tr>';
+}
+
+/* ── FILTER / STAGE CONTROLS ─────────────────────── */
+function setFilter(f) {
+  activeFilter = f;
+  applyFilters();
+  updateFilterBtns();
+}
+
+function updateFilterBtns() {
+  var ids = ['fAll','fInhouse','fVendor'];
+  ids.forEach(function(id){ var el = document.getElementById(id); if (!el) return; el.classList.remove('active'); });
+  var map = { all: 'fAll', inhouse: 'fInhouse', vendor: 'fVendor' };
+  var btnId = map[activeFilter];
+  if (btnId) {
+    var el = document.getElementById(btnId);
+    if (el) el.classList.add('active');
+  }
+}
+
+function toggleStage(stage) {
+  activeStage = activeStage === stage ? null : stage;
+  renderPipeline();
+  applyFilters();
+  updateFilterBtns();
+}
+/* ── DWELL TICK ──────────────────────────────────── */
+setInterval(function() {
+  DATA.items = DATA.items.map(function(i) {
+    if (!i.timestamp) return i;
+    var copy = Object.assign({}, i);
+    copy.dwell_hours = Math.round(((Date.now() - new Date(i.timestamp).getTime()) / 3600000) * 10) / 10;
+    return copy;
+  });
+  DATA.vendors = DATA.vendors.map(function(v) {
+    if (!v.timestamp) return v;
+    var copy = Object.assign({}, v);
+    copy.dwell_hours = Math.round(((Date.now() - new Date(v.timestamp).getTime()) / 3600000) * 10) / 10;
+    copy.overdue = copy.dwell_hours > 48;
+    return copy;
+  });
+  applyFilters();
+  renderVendors();
+}, 60000);
+
+/* ── RENDER ALL ──────────────────────────────────── */
+function renderAll() {
+  renderKPI();
+  renderPipeline();
+  renderBN();
+  renderOrders();
+  renderVendors();
+  renderAlerts();
+  applyFilters();
+  updateFilterBtns();
+}
+
+/* ── BOOT ────────────────────────────────────────── */
+connectWS();
+fetchAll();
+</script>
+
+<!-- React Upload Component -->
+<script type="text/babel">
+const { useState, useRef, useEffect } = React;
+
+function Upload({ onUploadSuccess }) {
+  const [uploading, setUploading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState('');
+  const [dragActive, setDragActive] = useState(false);
+  const [liveUrl, setLiveUrl] = useState('');
+  const [refreshInterval, setRefreshInterval] = useState(300);
+  const [autoSync, setAutoSync] = useState(false);
+  const [lastSync, setLastSync] = useState('--');
+  const [uploads, setUploads] = useState([]);
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    fetchTrackerStatus();
+    fetchUploads();
+  }, []);
+
+  const fetchTrackerStatus = async () => {
+    try {
+      const res = await fetch('http://localhost:3001/api/live-tracker/status');
+      const data = await res.json();
+      if (data.url) setLiveUrl(data.url);
+      if (data.interval) setRefreshInterval(data.interval);
+      setAutoSync(Boolean(data.autoSync));
+      setLastSync(data.lastSync ? new Date(data.lastSync).toLocaleString() : '--');
+    } catch (err) {
+      console.error('Tracker status error', err);
+    }
+  };
+
+  const fetchUploads = async () => {
+    try {
+      const res = await fetch('http://localhost:3001/api/uploads');
+      const data = await res.json();
+      if (data.ok) {
+        setUploads(data.pdfs || []);
+      }
+    } catch (err) {
+      console.error('Uploads fetch error', err);
+    }
+  };
+
+  const setAlert = (text, type) => {
+    setMessage(text);
+    setMessageType(type);
+    window.setTimeout(() => setMessage(''), 5000);
+  };
+
+  const uploadFile = async (file) => {
+    const allowed = ['.xlsx', '.xls', '.csv', '.json', '.pdf'];
+    const ext = '.' + file.name.split('.').pop().toLowerCase();
+    if (!allowed.includes(ext)) {
+      setAlert('❌ Only .xlsx, .xls, .csv, .json and .pdf files are allowed', 'error');
+      return;
+    }
+
+    if (file.size > 50 * 1024 * 1024) {
+      setAlert('❌ File must be smaller than 50MB', 'error');
+      return;
+    }
+
+    setUploading(true);
+    setMessage('Uploading file...');
+    setMessageType('');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('http://localhost:3001/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!data.ok) {
+        setAlert('❌ Upload failed: ' + (data.error || 'Unknown error'), 'error');
+        return;
+      }
+
+      if (data.type === 'pdf') {
+        setAlert('✅ PDF uploaded: ' + data.filename, 'success');
+      } else {
+        setAlert('✅ File loaded: ' + data.filename, 'success');
+        if (typeof onUploadSuccess === 'function') onUploadSuccess(data);
+      }
+      fetchUploads();
+    } catch (err) {
+      console.error(err);
+      setAlert('❌ Upload error: ' + err.message, 'error');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDrag = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.type === 'dragenter' || event.type === 'dragover') {
+      setDragActive(true);
+    } else {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setDragActive(false);
+    if (event.dataTransfer.files && event.dataTransfer.files.length) {
+      uploadFile(event.dataTransfer.files[0]);
+    }
+  };
+
+  const handleChange = (event) => {
+    if (event.target.files && event.target.files[0]) {
+      uploadFile(event.target.files[0]);
+    }
+  };
+
+  const handleSetUrl = async () => {
+    if (!liveUrl.trim()) {
+      setAlert('❌ Please enter a valid live URL', 'error');
+      return;
+    }
+    try {
+      const res = await fetch('http://localhost:3001/api/live-tracker/set-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: liveUrl, interval: refreshInterval }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setAlert('✅ Live source configured', 'success');
+        fetchTrackerStatus();
+      } else {
+        setAlert('❌ ' + (data.error || 'Could not configure live source'), 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      setAlert('❌ Live source error: ' + err.message, 'error');
+    }
+  };
+
+  const handleStartSync = async () => {
+    try {
+      const res = await fetch('http://localhost:3001/api/live-tracker/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setAutoSync(true);
+        setAlert('✅ Auto-sync started', 'success');
+      } else {
+        setAlert('❌ ' + (data.error || 'Unable to start auto-sync'), 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      setAlert('❌ Auto-sync error: ' + err.message, 'error');
+    }
+  };
+
+  const handleStopSync = async () => {
+    try {
+      const res = await fetch('http://localhost:3001/api/live-tracker/stop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setAutoSync(false);
+        setAlert('✅ Auto-sync stopped', 'success');
+      } else {
+        setAlert('❌ ' + (data.error || 'Unable to stop auto-sync'), 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      setAlert('❌ Auto-sync error: ' + err.message, 'error');
+    }
+  };
+
+  const handleSyncNow = async () => {
+    try {
+      setMessage('Syncing live source...');
+      setMessageType('');
+      const res = await fetch('http://localhost:3001/api/live-tracker/sync-now', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setAlert('✅ Live sync completed', 'success');
+        setLastSync(data.lastSync ? new Date(data.lastSync).toLocaleString() : '--');
+        if (typeof onUploadSuccess === 'function') onUploadSuccess(data);
+      } else {
+        setAlert('❌ Sync failed: ' + (data.error || 'Unknown'), 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      setAlert('❌ Sync error: ' + err.message, 'error');
+    }
+  };
+
+  return (
+    <div className="upload-card">
+      <div className="upload-card-header">
+        <div>
+          <h2>Upload New Data</h2>
+          <p>Upload Excel / CSV / JSON files, or PDF reports. Live Excel sync is also supported.</p>
+        </div>
+        <div className="status-chip">Live sync: {autoSync ? 'ON' : 'OFF'}</div>
+      </div>
+
+      <div
+        className={`upload-dropzone ${dragActive ? 'active' : ''} ${uploading ? 'disabled' : ''}`}
+        onDragEnter={handleDrag}
+        onDragOver={handleDrag}
+        onDragLeave={handleDrag}
+        onDrop={handleDrop}
+        onClick={() => !uploading && fileInputRef.current?.click()}
+      >
+        <div className="dropzone-inner">
+          <div className="dropzone-icon">📁</div>
+          <div className="dropzone-line">Drag & drop file here</div>
+          <div className="dropzone-subline">or click to browse • .xlsx .xls .csv .json .pdf</div>
+          <div className="dropzone-note">Max 50MB</div>
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".xlsx,.xls,.csv,.json,.pdf"
+          onChange={handleChange}
+          style={{ display: 'none' }}
+          disabled={uploading}
+        />
+      </div>
+
+      <div className="live-source-panel">
+        <div className="panel-title">Live Source Sync</div>
+        <input
+          type="text"
+          className="live-source-input"
+          placeholder="Paste direct Excel/CSV/JSON URL"
+          value={liveUrl}
+          onChange={(e) => setLiveUrl(e.target.value)}
+          disabled={uploading}
+        />
+        <div className="live-actions-row">
+          <div className="refresh-block">
+            <input
+              type="number"
+              min="60"
+              max="3600"
+              value={refreshInterval}
+              onChange={(e) => setRefreshInterval(Math.max(60, Math.min(3600, Number(e.target.value) || 300)))}
+              disabled={uploading || autoSync}
+            />
+            <span>sec refresh</span>
+          </div>
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={autoSync}
+              onChange={(e) => { e.target.checked ? handleStartSync() : handleStopSync(); }}
+              disabled={uploading || !liveUrl}
+            />
+            Auto-sync
+          </label>
+        </div>
+        <div className="button-row">
+          <button className="btn btn-primary" onClick={handleSetUrl} disabled={uploading || !liveUrl}>Configure</button>
+          <button className="btn btn-secondary" onClick={handleSyncNow} disabled={uploading || !liveUrl}>Sync Now</button>
+          <button className="btn btn-clear" onClick={handleStopSync} disabled={uploading || !autoSync}>Stop</button>
+        </div>
+        <div className="last-sync">Last sync: {lastSync}</div>
+      </div>
+
+      <div className="uploads-list">
+        <div className="uploads-title">Uploaded PDFs</div>
+        {uploads.length ? (
+          <ul>
+            {uploads.map((file) => (
+              <li key={file}>
+                <a href={`http://localhost:3001/data/${file}`} target="_blank" rel="noreferrer">{file}</a>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="uploads-empty">No uploaded PDFs yet</div>
+        )}
+      </div>
+
+      {message && (
+        <div className={`upload-alert ${messageType}`}>{message}</div>
+      )}
+
+      <style>{`
+        .upload-card { background: rgba(13,17,23,.94); border: 1px solid var(--b1); border-radius: 14px; padding: 20px; margin-bottom: 1.5rem; box-shadow: 0 0 40px rgba(0,0,0,.1); }
+        .upload-card-header { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; margin-bottom:20px; }
+        .upload-card-header h2 { margin:0;font-size:18px;color:var(--t1); }
+        .upload-card-header p { margin:6px 0 0;color:var(--t3);font-size:12px;max-width:560px; }
+        .status-chip { padding:6px 12px;border-radius:999px;border:1px solid var(--b2);background:rgba(0,229,180,.08);color:var(--acc);font-family:var(--mono);font-size:11px; }
+        .upload-dropzone { border:2px dashed rgba(0,153,255,.35); border-radius:16px; padding:28px; text-align:center; transition:all .2s ease; cursor:pointer; background:rgba(0,0,0,.15); margin-bottom:20px; }
+        .upload-dropzone.active { border-color:var(--acc); background:rgba(0,229,180,.08); }
+        .upload-dropzone.disabled { opacity:.65; cursor:not-allowed; }
+        .dropzone-inner { display:flex; flex-direction:column; align-items:center; gap:10px; }
+        .dropzone-icon { font-size:32px; }
+        .dropzone-line { font-size:14px; font-weight:600; color:var(--t1); }
+        .dropzone-subline { font-size:11px; color:var(--t2); }
+        .dropzone-note { font-size:10px; color:var(--t3); }
+        .live-source-panel { background:rgba(7,9,13,.8); border:1px solid var(--b1); border-radius:12px; padding:18px; margin-bottom:20px; }
+        .panel-title { font-family:var(--mono); font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--t3); margin-bottom:12px; }
+        .live-source-input { width:100%; padding:12px 14px; border-radius:10px; border:1px solid var(--b2); background:var(--bg4); color:var(--t1); font-family:var(--mono); font-size:12px; margin-bottom:14px; outline:none; }
+        .live-actions-row { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:14px; }
+        .refresh-block { display:flex; align-items:center; gap:8px; color:var(--t3); font-size:11px; }
+        .refresh-block input { width:90px; padding:10px 12px; border-radius:8px; border:1px solid var(--b2); background:var(--bg4); color:var(--t1); font-family:var(--mono); font-size:12px; }
+        .checkbox-label { display:flex; align-items:center; gap:8px; color:var(--t2); font-size:12px; -webkit-user-select:none; user-select:none; }
+        .checkbox-label input { accent-color:var(--acc); }
+        .button-row { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:10px; }
+        .btn { border:1px solid var(--b2); border-radius:10px; padding:10px 16px; font-family:var(--mono); font-size:12px; cursor:pointer; transition:all .18s; }
+        .btn-primary { background:var(--acc); color:#000; border-color:transparent; }
+        .btn-secondary { background:rgba(0,153,255,.12); color:var(--t1); }
+        .btn-clear { background:transparent; color:var(--danger); }
+        .btn:hover { transform:translateY(-1px); }
+        .btn:disabled { opacity:.55; cursor:not-allowed; transform:none; }
+        .last-sync { color:var(--t3); font-size:11px; }
+        .uploads-list { border:1px solid var(--b1); border-radius:12px; padding:16px; background:rgba(0,0,0,.18); }
+        .uploads-title { font-family:var(--mono); font-size:11px; color:var(--t3); margin-bottom:10px; }
+        .uploads-list ul { list-style:none; padding-left:0; margin:0; display:grid; gap:10px; }
+        .uploads-list li { font-size:12px; color:var(--t2); }
+        .uploads-list a { color:var(--acc2); text-decoration:none; }
+        .uploads-list a:hover { text-decoration:underline; }
+        .uploads-empty { color:var(--t3); font-size:12px; }
+        .upload-alert { margin-top:16px; padding:12px 14px; border-radius:12px; font-family:var(--mono); font-size:12px; }
+        .upload-alert.success { background:rgba(16,185,129,.12); color:var(--success); border:1px solid rgba(16,185,129,.2); }
+        .upload-alert.error { background:rgba(244,63,94,.12); color:var(--danger); border:1px solid rgba(244,63,94,.2); }
+      `}</style>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('uploadRoot'));
+root.render(<Upload onUploadSuccess={(data) => {
+  fetchAll();
+  if (data.type !== 'pdf') {
+    showAlert('✅ ' + data.filename + ' loaded successfully!', 'success');
+  }
+}} />);
+</script>
+</body>
+</html>
