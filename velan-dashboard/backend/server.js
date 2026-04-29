@@ -15,8 +15,7 @@ const liveTracker = require('./liveTracker');
 const app    = express();
 const server = http.createServer(app);
 let FILE     = path.join(__dirname, 'data', 'project_2.xlsx');
-const PORT   = 3001;
-
+const PORT = process.env.PORT || 3001;
 // Live sync polling
 let syncInterval = null;
 let syncTimer = null;
