@@ -12,6 +12,11 @@ const { parseProject2 }  = require('./parser');
 const { stagePipeline, bottlenecks, orderSummary, vendorItems, blockedItems, kpiSummary } = require('./logic');
 const liveTracker = require('./liveTracker');
 const app    = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ✅ 4. THEN static frontend (YOUR LINE)
+app.use(express.static(path.join(__dirname, '../frontend')));
 const server = http.createServer(app);
 // 🔥 GLOBAL ERROR HANDLING (ADD HERE)
 process.on('uncaughtException', (err) => {
@@ -320,7 +325,10 @@ app.get('/api/live-tracker/status', function(req, res) {
     lastSync: null
   });
 });
-
+// ✅ FRONTEND ROUTE (ADD THIS)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/index.html'));
+});
 server.listen(PORT, function(){
   console.log('\nVelan Dashboard API ready');
   console.log('http://localhost:' + PORT + '/api/health');
@@ -333,4 +341,7 @@ server.listen(PORT, function(){
       console.error('Startup reload failed:', e.message);
     }
   }, 1000);
+});
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
