@@ -329,7 +329,7 @@ app.get('/api/live-tracker/status', function(req, res) {
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/src/index.html'));
 });
-cd ..Dateserver.listen(PORT, function(){
+server.listen(PORT, function(){
   console.log('\nVelan Dashboard API ready');
   console.log('http://localhost:' + PORT + '/api/health');
 
