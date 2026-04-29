@@ -16,7 +16,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ✅ 4. THEN static frontend (YOUR LINE)
-app.use(express.static(path.join(__dirname, '../frontend')));
+app.use(express.static(path.join(__dirname, '../frontend/src')));
 const server = http.createServer(app);
 // 🔥 GLOBAL ERROR HANDLING (ADD HERE)
 process.on('uncaughtException', (err) => {
@@ -326,8 +326,8 @@ app.get('/api/live-tracker/status', function(req, res) {
   });
 });
 // ✅ FRONTEND ROUTE (ADD THIS)
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/index.html'));
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/src/index.html'));
 });
 server.listen(PORT, function(){
   console.log('\nVelan Dashboard API ready');
