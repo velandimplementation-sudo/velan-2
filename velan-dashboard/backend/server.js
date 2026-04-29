@@ -326,7 +326,7 @@ app.get('/api/live-tracker/status', function(req, res) {
   });
 });
 // ✅ FRONTEND ROUTE (ADD THIS)
-app.get('/', (req, res) => {
+app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/src/index.html'));
 });
 server.listen(PORT, function(){
@@ -341,7 +341,4 @@ server.listen(PORT, function(){
       console.error('Startup reload failed:', e.message);
     }
   }, 1000);
-});
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
 });
