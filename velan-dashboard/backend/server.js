@@ -2,6 +2,7 @@
 const express  = require('express');
 const cors     = require('cors');
 const path     = require('path');
+const axios    = require('axios');
 const http     = require('http');
 const chokidar = require('chokidar');
 const fs       = require('fs');
@@ -227,10 +228,16 @@ app.get('/api/uploads', function(_,res) {
 });
 
 // Live Tracker Endpoints
-app.post('/api/live-tracker/set-url', function(req, res) {
+app.post('/api/live-tracker/set-url', (req, res) => {
   const { url, interval } = req.body;
-  const result = liveTracker.setLiveUrl(url, interval);
-  res.json(result);
+
+  global.liveTracker = {
+    url,
+    interval,
+    lastSync: null
+  };
+
+  res.json({ ok: true });
 });
 
 app.post('/api/live-tracker/start', function(req, res) {
@@ -251,18 +258,64 @@ app.post('/api/live-tracker/stop', function(req, res) {
 });
 
 app.post('/api/live-tracker/sync-now', async function(req, res) {
-  const result = await liveTracker.syncNow();
-  if (result.ok) {
-    FILE = result.filePath;
+  try {
+    const tracker = liveTracker.getStatus();
+    const url = tracker.url;
+
+    if (!url) {
+      return res.json({ ok: false, error: 'No URL configured' });
+    }
+
+    // 🔥 FETCH GOOGLE SHEET CSV (FIXES YOUR ERROR)
+    const response = await axios.get(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    });
+
+    const csvData = response.data;
+
+    const fs = require('fs');
+    const path = require('path');
+
+    // ✅ SAVE CSV TO FILE
+    const filePath = path.join(__dirname, 'data', 'live.csv');
+    fs.writeFileSync(filePath, csvData);
+
+    // ✅ USE YOUR EXISTING SYSTEM
+    FILE = filePath;
     setupWatcher();
     reload();
-    broadcast({ type:'sync', status:'success', ts:result.lastSync, count:result.syncCount });
+
+    const result = {
+      ok: true,
+      lastSync: new Date(),
+      syncCount: csvData.length
+    };
+
+    broadcast({
+      type: 'sync',
+      status: 'success',
+      ts: result.lastSync,
+      count: result.syncCount
+    });
+
+    res.json(result);
+
+  } catch (err) {
+    console.error('SYNC ERROR:', err.message);
+
+    res.json({
+      ok: false,
+      error: err.message
+    });
   }
-  res.json(result);
 });
 
-app.get('/api/live-tracker/status', function(_,res) {
-  res.json(liveTracker.getStatus());
+app.get('/api/live-tracker/status', function(req, res) {
+  res.json(global.liveTracker || {
+    url: '',
+    interval: 300,
+    lastSync: null
+  });
 });
 
 server.listen(PORT, function(){

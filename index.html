@@ -331,9 +331,9 @@ body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100
           <span class="search-ico">⌕</span>
           <input class="search-inp" id="searchInp" type="text" placeholder="search component, PO, customer…" oninput="applyFilters()">
         </div>
-        <button class="btn" id="fAll"     onclick="setFilter('all')">All</button>
-        <button class="btn" id="fInhouse" onclick="setFilter('inhouse')">Inhouse</button>
-        <button class="btn" id="fVendor"  onclick="setFilter('vendor')">Vendor</button>
+        <button class="btn" id="fAll"     onclick="setFilter('ALL')">All</button>
+        <button class="btn" id="fInhouse" onclick="setFilter('INHOUSE')">Inhouse</button>
+        <button class="btn" id="fVendor"  onclick="setFilter('VENDOR')">Vendor</button>
         <span class="item-count" id="itemCount"></span>
       </div>
       <div class="table-wrap">
@@ -357,7 +357,7 @@ const API = 'http://localhost:3001/api';
 const WS  = 'ws://localhost:3001';
 
 var DATA = { kpi:{}, stages:[], bottlenecks:[], orders:[], vendors:[], items:[] };
-var activeFilter = 'all';
+var activeFilter = 'ALL';
 var activeStage  = null;
 var ws = null;
 
@@ -671,20 +671,20 @@ function applyFilters() {
   var items = (DATA.items || []).slice();
   console.log('Filter:', activeFilter, 'Stage:', activeStage);
 
-  if (activeStage && activeFilter === 'all') {
+  if (activeStage && activeFilter === 'ALL') {
   items = items.filter(function(i){
     return i.current_op === activeStage;
   });
 }
-if (activeFilter === 'inhouse') {
+if (activeFilter === 'INHOUSE') {
   items = items.filter(function(i){
-    return (i.location || '').toLowerCase().includes('inhouse');
+    return i.location === 'INHOUSE';
   });
 }
 
-if (activeFilter === 'vendor') {
+if (activeFilter === 'VENDOR') {
   items = items.filter(function(i){
-    return (i.location || '').toLowerCase().includes('vendor');
+    return i.location === 'WITH VENDOR';
   });
 }
   if (q) {
