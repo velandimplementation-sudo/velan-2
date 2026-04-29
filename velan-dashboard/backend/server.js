@@ -11,9 +11,16 @@ const { WebSocketServer } = require('ws');
 const { parseProject2 }  = require('./parser');
 const { stagePipeline, bottlenecks, orderSummary, vendorItems, blockedItems, kpiSummary } = require('./logic');
 const liveTracker = require('./liveTracker');
-
 const app    = express();
 const server = http.createServer(app);
+// 🔥 GLOBAL ERROR HANDLING (ADD HERE)
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT ERROR:', err);
+});
+
+process.on('unhandledRejection', (err) => {
+  console.error('UNHANDLED PROMISE:', err);
+});
 let FILE     = path.join(__dirname, 'data', 'project_2.xlsx');
 const PORT = process.env.PORT || 3001;
 // Live sync polling
@@ -64,31 +71,28 @@ function broadcast(data) {
 
 function reload() {
   try {
+    if (!fs.existsSync(FILE)) {
+      console.log('⚠ No Excel file found, using empty data');
+      ITEMS = [];
+      ORDERS = [];
+      return;
+    }
+
     ITEMS  = parseProject2(FILE);
     ORDERS = orderSummary(ITEMS);
     LAST_LOADED = new Date().toISOString();
     PARSE_ERROR = null;
-    console.log('[' + new Date().toLocaleTimeString() + '] Reloaded ' + ITEMS.length + ' items across ' + ORDERS.length + ' orders');
-    broadcast({ type:'refresh', count:ITEMS.length, ts:LAST_LOADED });
+
+    console.log('Reloaded ' + ITEMS.length + ' items');
   } catch(e) {
     PARSE_ERROR = e.message;
     console.error('Parse failed:', e.message);
+
+    // 🔥 IMPORTANT: prevent crash
+    ITEMS = [];
+    ORDERS = [];
   }
 }
-
-reload();
-
-const debounce = (fn,ms) => { let t; return function() { clearTimeout(t); t=setTimeout(fn,ms); }; };
-
-let watcherInstance = null;
-function setupWatcher() {
-  if (watcherInstance) watcherInstance.close();
-  watcherInstance = chokidar.watch(FILE, {ignoreInitial:true, ignored:/(~\$)/});
-  watcherInstance.on('change', debounce(reload, 2000));
-}
-
-setupWatcher();
-
 // Live sync polling function
 function startLiveSync() {
   if (syncInterval) clearInterval(syncInterval);
@@ -319,6 +323,14 @@ app.get('/api/live-tracker/status', function(req, res) {
 
 server.listen(PORT, function(){
   console.log('\nVelan Dashboard API ready');
-  console.log('  http://localhost:' + PORT + '/api/health');
-  console.log('  ws://localhost:'   + PORT + '\n');
+  console.log('http://localhost:' + PORT + '/api/health');
+
+  // ✅ SAFE LOAD AFTER SERVER START
+  setTimeout(() => {
+    try {
+      reload();
+    } catch (e) {
+      console.error('Startup reload failed:', e.message);
+    }
+  }, 1000);
 });
