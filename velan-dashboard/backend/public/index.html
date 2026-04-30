@@ -410,7 +410,7 @@ body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100
 <script>
 const API = window.location.hostname.includes('localhost')
   ? 'http://localhost:3001/api'
-  : 'https://velan-dashboard.onrender.com/api';
+  : '/api';
 const WS  = 'ws://localhost:3001';
 var DATA = { kpi:{}, stages:[], bottlenecks:[], orders:[], vendors:[], items:[] };
 var activeFilter = 'ALL';
@@ -529,12 +529,19 @@ function fetchAll() {
   });
 }
 function manualRefresh() {
-  fetch(API + '/refresh', { method: 'POST' })
-    .then(function () {
-      return fetchAll();
+  fetch(API + '/live-tracker/sync-now', { method: 'POST' })
+    .then(function (res) {
+      return res.json();
+    })
+    .then(function (data) {
+      if (data.ok) {
+        fetchAll();
+      } else {
+        showAlert('❌ Sync failed: ' + data.error, 'error');
+      }
     })
     .catch(function () {
-      showAlert('⚠️ Refresh failed — server not reachable', 'warning');
+      showAlert('⚠️ Sync failed — server not reachable', 'warning');
     });
 }
 
