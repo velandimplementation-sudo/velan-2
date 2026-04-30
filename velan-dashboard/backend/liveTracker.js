@@ -47,15 +47,15 @@ async function fetchExcelFromUrl(url) {
 
     const freshUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
     const response = await axios.get(freshUrl, {
-      responseType: 'arraybuffer',
-      timeout: 30000,
-      headers:
-      {
-        'User-Agent': 'Mozilla/5.0',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
+  responseType: 'arraybuffer',
+  timeout: 30000,
+  maxRedirects: 5,
+  headers: {
+    'User-Agent': 'Mozilla/5.0',
+    'Accept': '*/*',
+    'Connection': 'keep-alive',
+    'Cache-Control': 'no-cache',
+  }
     });
 
     const buffer = Buffer.from(response.data);
@@ -77,7 +77,7 @@ async function fetchExcelFromUrl(url) {
     };
 
   } catch (e) {
-    console.error('[Live Tracker] Fetch failed:', e.message);
+    console.error('[Live Tracker] FULL ERROR:', e.response?.status, e.message);
 
     config.lastError = e.message;
     config.status = 'error';
