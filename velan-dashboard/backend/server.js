@@ -29,7 +29,7 @@ process.on('unhandledRejection', (err) => {
 let FILE     = path.join(__dirname, 'data', 'project_2.xlsx');
 const PORT = process.env.PORT || 3001;
 // Live sync polling
-let syncInterval = null;
+
 let syncTimer = null;
 
 // Multer configuration for file uploads
@@ -119,30 +119,69 @@ function setupWatcher() {
 
   console.log('[Watcher] Watching:', FILE);
 }
-function startLiveSync() {
-  if (syncInterval) clearInterval(syncInterval);
-  if (syncTimer) clearTimeout(syncTimer);
+let syncInterval = null;
+let isSyncRunning = false;
 
+function startLiveSync() {
   const cfg = liveTracker.getConfig();
+
+  // ❌ Prevent duplicate intervals
+  if (syncInterval) {
+    console.log('[Live Tracker] Already running — skipping');
+    return;
+  }
+
   if (!cfg.autoSync || !cfg.url) return;
 
-  console.log('[Live Tracker] Starting auto-sync every ' + cfg.interval + ' seconds');
-  
+  console.log('[Live Tracker] Auto-sync every ' + cfg.interval + ' seconds');
+
   syncInterval = setInterval(async function() {
-    const result = await liveTracker.syncNow();
-    if (result.ok) {
-      FILE = result.filePath;
-      setupWatcher();
-      reload();
-      console.log('[Live Tracker] Sync successful from URL');
-      broadcast({ type:'sync', status:'success', ts:result.lastSync, count:result.syncCount });
-    } else {
-      console.error('[Live Tracker] Sync failed:', result.error);
-      broadcast({ type:'sync', status:'error', error:result.error });
+
+    // ❌ Prevent overlapping sync
+    if (isSyncRunning) {
+      console.log('[Live Tracker] Previous sync still running — skip');
+      return;
     }
+
+    isSyncRunning = true;
+
+    console.log('[Live Tracker] Running sync...');
+
+    try {
+      const result = await liveTracker.syncNow();
+
+      if (result.ok) {
+        FILE = result.filePath;
+        setupWatcher();
+        reload();
+
+        console.log('[Live Tracker] Sync success');
+
+        broadcast({
+          type: 'sync',
+          status: 'success',
+          ts: result.lastSync,
+          count: result.syncCount
+        });
+      } else {
+        console.error('[Live Tracker] Sync failed:', result.error);
+      }
+
+    } catch (e) {
+      console.error('[Live Tracker] Unexpected error:', e.message);
+    }
+
+    isSyncRunning = false;
+
   }, cfg.interval * 1000);
 }
-
+function stopLiveSync() {
+  if (syncInterval) {
+    clearInterval(syncInterval);
+    syncInterval = null;
+    console.log('[Live Tracker] Auto-sync stopped');
+  }
+}
 // Initialize live sync if configured
 const initialConfig = liveTracker.getConfig();
 if (initialConfig.autoSync && initialConfig.url) {
@@ -259,65 +298,42 @@ app.get('/api/uploads', function(_,res) {
 app.post('/api/live-tracker/set-url', (req, res) => {
   const { url, interval } = req.body;
 
-  global.liveTracker = {
-    url,
-    interval,
-    lastSync: null
-  };
+  const result = liveTracker.setLiveUrl(url, interval);
 
-  res.json({ ok: true });
-});
-
-app.post('/api/live-tracker/start', function(req, res) {
-  const result = liveTracker.startAutoSync();
   if (result.ok) {
-    startLiveSync();
+    stopLiveSync();     // reset old interval
+    startLiveSync();    // start with new config
   }
+
   res.json(result);
 });
 
-app.post('/api/live-tracker/stop', function(req, res) {
-  const result = liveTracker.stopAutoSync();
-  if (syncInterval) {
-    clearInterval(syncInterval);
-    syncInterval = null;
+app.post('/api/live-tracker/start', function(req, res) {
+
+  // ✅ STOP any existing interval first
+  stopLiveSync();
+
+  const result = liveTracker.startAutoSync();
+
+  if (result.ok) {
+    startLiveSync();   // start fresh only once
   }
+
+  res.json(result);
+});
+app.post('/api/live-tracker/stop', function(req, res) {
+  stopLiveSync();   // ✅ this already clears interval
+  const result = liveTracker.stopAutoSync();
   res.json(result);
 });
 
 app.post('/api/live-tracker/sync-now', async function(req, res) {
-  try {
-    const tracker = liveTracker.getStatus();
-    const url = tracker.url;
+  const result = await liveTracker.syncNow();
 
-    if (!url) {
-      return res.json({ ok: false, error: 'No URL configured' });
-    }
-
-    // 🔥 FETCH GOOGLE SHEET CSV (FIXES YOUR ERROR)
-    const response = await axios.get(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0' }
-    });
-
-    const csvData = response.data;
-
-    const fs = require('fs');
-    const path = require('path');
-
-    // ✅ SAVE CSV TO FILE
-    const filePath = path.join(__dirname, 'data', 'live.csv');
-    fs.writeFileSync(filePath, csvData);
-
-    // ✅ USE YOUR EXISTING SYSTEM
-    FILE = filePath;
+  if (result.ok) {
+    FILE = result.filePath;
     setupWatcher();
     reload();
-
-    const result = {
-      ok: true,
-      lastSync: new Date(),
-      syncCount: csvData.length
-    };
 
     broadcast({
       type: 'sync',
@@ -325,25 +341,15 @@ app.post('/api/live-tracker/sync-now', async function(req, res) {
       ts: result.lastSync,
       count: result.syncCount
     });
-
-    res.json(result);
-
-  } catch (err) {
-    console.error('SYNC ERROR:', err.message);
-
-    res.json({
-      ok: false,
-      error: err.message
-    });
+  } else {
+    console.error('[Live Tracker] Sync failed:', result.error);
   }
+
+  res.json(result);
 });
 
 app.get('/api/live-tracker/status', function(req, res) {
-  res.json(global.liveTracker || {
-    url: '',
-    interval: 300,
-    lastSync: null
-  });
+  res.json(liveTracker.getStatus());
 });
 // ✅ SERVE FRONTEND STATIC FILES
 // Serve frontend static files

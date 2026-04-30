@@ -45,11 +45,16 @@ async function fetchExcelFromUrl(url) {
   try {
     console.log('[Live Tracker] Fetching:', url);
 
-    const response = await axios.get(url, {
+    const freshUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+    const response = await axios.get(freshUrl, {
       responseType: 'arraybuffer',
       timeout: 30000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0'
+      headers:
+      {
+        'User-Agent': 'Mozilla/5.0',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
       }
     });
 

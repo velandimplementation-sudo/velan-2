@@ -246,6 +246,8 @@ body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100
       <div class="live-label" id="liveLabel">offline</div>
     </div>
     <button class="btn" onclick="manualRefresh()">↻ Refresh</button>
+    <button class="btn" onclick="showVendorModule(event)">Vendors</button>
+    <button class="btn" onclick="showDashboard()">Dashboard</button>
   </div>
 </header>
 
@@ -256,7 +258,7 @@ body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100
 <div id="uploadRoot" style="background: var(--bg); padding: 0 1.5rem; padding-top: 1rem;"></div>
 
 <!-- MAIN -->
-<div class="main">
+<div class="main" id="dashboardView">
 
   <!-- KPIs -->
   <section>
@@ -352,10 +354,62 @@ body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100
 
 </div><!-- /main -->
 
+<!-- ✅ ADD VENDOR MODULE HERE -->
+<div class="main" id="vendorView" style="display:none;">
+
+  <section>
+    <div class="section-hdr">
+      <div class="section-hdr-label">Vendor Module</div>
+      <div class="section-hdr-line"></div>
+    </div>
+
+    <div class="card">
+       <div class="kpi-grid" id="vendorKPI" style="margin-bottom:12px;"></div>
+        <div class="section-hdr">
+          <div class="section-hdr-label">All Vendor Items</div>
+          <div class="section-hdr-line"></div>
+        </div>
+      <div class="section-hdr">
+        <div class="section-hdr-label">All Vendor Items</div>
+        <div class="section-hdr-line"></div>
+      </div>
+
+      <div class="table-controls">
+        <div class="search-box">
+          <span class="search-ico">⌕</span>
+          <input class="search-inp" id="vendorSearch" placeholder="Search vendor..." oninput="renderVendorModule()">
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Component</th>
+              <th>PO</th>
+              <th>Customer</th>
+              <th>Stage</th>
+              <th>Dwell</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="vendorModuleBody">
+            <tr>
+              <td colspan="6">
+                <div class="spin-wrap"><div class="spin"></div></div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </section>
+
+</div>
 <script>
 const API = 'http://localhost:3001/api';
 const WS  = 'ws://localhost:3001';
-
 var DATA = { kpi:{}, stages:[], bottlenecks:[], orders:[], vendors:[], items:[] };
 var activeFilter = 'ALL';
 var activeStage  = null;
@@ -664,7 +718,91 @@ function renderVendors() {
       + '</tr>';
   }).join('') || '<tr><td colspan="6"><div class="empty">No vendor items</div></td></tr>';
 }
+// ================= VENDOR MODULE =================
 
+function showVendorModule() {
+  document.getElementById('dashboardView').style.display = 'none';
+  document.getElementById('vendorView').style.display = 'block';
+  document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  renderVendorModule();
+}
+function showVendorModule() {
+  document.getElementById('dashboardView').style.display = 'none';
+  document.getElementById('vendorView').style.display = 'block';
+  document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+   if (e) e.target.classList.add('active');
+
+  renderVendorModule();
+}
+
+
+function showDashboard() {
+  document.getElementById('dashboardView').style.display = 'block';
+  document.getElementById('vendorView').style.display = 'none';
+}
+
+function renderVendorModule() {
+  var q = (document.getElementById('vendorSearch').value || '').toLowerCase();
+
+  var vendors = DATA.vendors || [];
+  if (!DATA.vendors || !DATA.vendors.length) {
+    document.getElementById('vendorModuleBody').innerHTML =
+      '<tr><td colspan="6"><div class="empty">No vendor data available</div></td></tr>';
+    return;
+  }
+  vendors.sort((a, b) => (b.dwell_hours || 0) - (a.dwell_hours || 0));
+  renderVendorKPI();
+  if (!vendors.length) {
+    document.getElementById('vendorModuleBody').innerHTML =
+    '<tr><td colspan="6"><div class="empty">No vendor data available</div></td></tr>';
+    return;
+  }
+  if (q) {
+  vendors = vendors.filter(function(v){
+    return (v.product_name || '').toLowerCase().includes(q)
+      || (v.customer || '').toLowerCase().includes(q)
+      || String(v.po_number || '').toLowerCase().includes(q)
+      || (v.current_op || '').toLowerCase().includes(q)
+      || (v.location || '').toLowerCase().includes(q)
+      || (v.status1 || '').toLowerCase().includes(q)
+      || (v.status2 || '').toLowerCase().includes(q);
+  });
+}
+  document.getElementById('vendorModuleBody').innerHTML =
+    vendors.map(function(v){
+      return '<tr onclick="filterByVendor(\'' + v.customer + '\')" class="' + (v.overdue ? 'row-blocked' : '') + '">'
+        + '<td>' + v.product_name + '</td>'
+        + '<td style="color:var(--acc2)">' + (v.po_number || '-') + '</td>'
+        + '<td>' + v.customer + '</td>'
+        + '<td>' + opBadge(v.current_op) + '</td>'
+        + '<td>' + fmtDwell(v.dwell_hours) + '</td>'
+        + '<td>' + (v.status2 || v.status1 || '-') + '</td>'
+        + '</tr>';
+    }).join('')
+    || '<tr><td colspan="6"><div class="empty">No vendor data</div></td></tr>';
+}
+function renderVendorKPI() {
+  const total = DATA.vendors.length;
+  const overdue = DATA.vendors.filter(v => v.overdue).length;
+
+  document.getElementById('vendorKPI').innerHTML = `
+    <div class="kpi">
+      <div class="kpi-label">Total Vendor Items</div>
+      <div class="kpi-num c-acc3">${total}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Overdue</div>
+      <div class="kpi-num c-danger">${overdue}</div>
+    </div>
+  `;
+}
+function filterByVendor(name) {
+  showDashboard();
+  document.getElementById('searchInp').value = name;
+  applyFilters();
+}
 /* ── MAIN TABLE ──────────────────────────────────── */
 function applyFilters() {
   var q = (document.getElementById('searchInp').value || '').toLowerCase();
@@ -697,13 +835,14 @@ function applyFilters() {
 
   // ✅ SEARCH
   if (q) {
-    items = items.filter(function(i){
-      return (i.product_name || '').toLowerCase().includes(q)
-        || (i.customer || '').toLowerCase().includes(q)
-        || String(i.po_number || '').toLowerCase().includes(q);
-    });
-  }
-
+  items = items.filter(function(i){
+    return (i.product_name || '').toLowerCase().includes(q)
+      || (i.customer || '').toLowerCase().includes(q)
+      || String(i.po_number || '').toLowerCase().includes(q)
+      || (i.current_op || '').toLowerCase().includes(q)
+      || (i.location || '').toLowerCase().includes(q);
+  });
+}
   // ✅ COUNT
   document.getElementById('itemCount').textContent =
     items.length + ' items (showing ' + Math.min(items.length, 200) + ')';
@@ -759,6 +898,7 @@ setInterval(function() {
     copy.dwell_hours = Math.round(((Date.now() - new Date(i.timestamp).getTime()) / 3600000) * 10) / 10;
     return copy;
   });
+
   DATA.vendors = DATA.vendors.map(function(v) {
     if (!v.timestamp) return v;
     var copy = Object.assign({}, v);
@@ -766,10 +906,16 @@ setInterval(function() {
     copy.overdue = copy.dwell_hours > 48;
     return copy;
   });
+
   applyFilters();
   renderVendors();
-}, 60000);
 
+  // ✅ ADD THIS PART
+  if (document.getElementById('vendorView').style.display !== 'none') {
+    renderVendorModule();
+  }
+
+}, 60000);
 /* ── RENDER ALL ──────────────────────────────────── */
 function renderAll() {
   renderKPI();
@@ -780,6 +926,7 @@ function renderAll() {
   renderAlerts();
   applyFilters();
   updateFilterBtns();
+  renderVendorModule();
 }
 // ✅ ADD HERE (exact position)
 function setFilter(type) {
