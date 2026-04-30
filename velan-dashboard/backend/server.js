@@ -359,7 +359,7 @@ app.use(express.static(path.join(__dirname, '..', 'frontend')));
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
 });
-server.listen(PORT, '0.0.0.0', function(){
+server.listen(PORT, function(){
   console.log('\nVelan Dashboard API ready');
   console.log('http://localhost:' + PORT + '/api/health');
 
