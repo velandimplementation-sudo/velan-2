@@ -353,11 +353,10 @@ app.get('/api/live-tracker/status', function(req, res) {
 });
 // ✅ SERVE FRONTEND STATIC FILES
 // Serve frontend static files
-app.use(express.static(path.join(__dirname, '..', 'frontend')));
-
+app.use(express.static(path.join(__dirname, 'public')));
 // Catch-all (NO patterns)
 app.use((req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 server.listen(PORT,'0.0.0.0', function(){
   console.log('\nVelan Dashboard API ready');
