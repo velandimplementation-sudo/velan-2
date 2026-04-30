@@ -99,6 +99,26 @@ function reload() {
   }
 }
 // Live sync polling function
+let watcher = null;
+
+function setupWatcher() {
+  if (watcher) watcher.close();
+
+  if (!fs.existsSync(FILE)) {
+    console.log('[Watcher] File not found');
+    return;
+  }
+
+  watcher = chokidar.watch(FILE, { ignoreInitial: true });
+
+  watcher.on('change', () => {
+    console.log('[Watcher] File changed');
+    reload();
+    broadcast({ type: 'file-change' });
+  });
+
+  console.log('[Watcher] Watching:', FILE);
+}
 function startLiveSync() {
   if (syncInterval) clearInterval(syncInterval);
   if (syncTimer) clearTimeout(syncTimer);
@@ -326,10 +346,11 @@ app.get('/api/live-tracker/status', function(req, res) {
   });
 });
 // ✅ SERVE FRONTEND STATIC FILES
+// Serve frontend static files
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
-// ✅ CATCH-ALL ROUTE FOR SPA (SERVE INDEX.HTML)
-app.get('*', (req, res) => {
+// Catch-all (NO patterns)
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
 });
 server.listen(PORT, function(){
