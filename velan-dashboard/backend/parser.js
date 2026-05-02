@@ -94,7 +94,7 @@ function parseProject2(filePath) {
 
     const ts        = row[COL.TIMESTAMP];
     const timestamp = excelToDate(ts);
-    const dwell_h   = timestamp ? Math.round(((Date.now()-timestamp.getTime())/3600000)*10)/10 : null;
+    const dwell_h = timestamp ? Math.max(0, Math.round(((Date.now()-timestamp.getTime())/3600000)*10)/10) : null;
     const location  = cleanLocation(row[COL.LOCATION]);
     const sae       = matchSAEChain(product);
 

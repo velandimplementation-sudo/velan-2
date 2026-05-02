@@ -445,16 +445,17 @@ function fmtDwell(h) {
 
 function opBadge(op) {
   if (!op) return '';
+  var base = op.trim().toUpperCase().split('-')[0].split(' ')[0];
   var cls;
-  if (['PTV','HTV','BLV','BLI_V'].indexOf(op) > -1) cls = 'op-vendor';
-  else if (['ASS','STOCK','READY','STORES'].indexOf(op) > -1) cls = 'op-done';
-  else if (op === 'JBI' || op === 'PRE ASS') cls = 'op-warn';
-  else if (['CG','SG','M1','LATHE'].indexOf(op) > -1) cls = 'op-blue';
-  else if (op === 'TO BE ORDER') cls = 'op-danger';
+  if (['PTV','HTV','BLV','BLI'].indexOf(base) > -1) cls = 'op-vendor';
+  else if (['ASS','STOCK','READY','STORES'].indexOf(base) > -1) cls = 'op-done';
+  else if (['JBI','PRE'].indexOf(base) > -1) cls = 'op-warn';
+  else if (['CG','SG','SGV','M1','LATHE'].indexOf(base) > -1) cls = 'op-blue';
+  else if (base === 'TO') cls = 'op-danger';
+  else if (['HTI','HTV','HT'].indexOf(base) > -1) cls = 'op-warn';
   else cls = 'op-muted';
   return '<span class="op ' + cls + '">' + op + '</span>';
 }
-
 function locBadge(loc) {
   return loc === 'WITH VENDOR'
     ? '<span class="loc loc-v">VENDOR</span>'
