@@ -1156,7 +1156,9 @@ function Upload({ onUploadSuccess }) {
         setAlert('✅ Live sync completed', 'success');
         setLastSync(data.lastSync ? new Date(data.lastSync).toLocaleString() : '--');
         if (typeof onUploadSuccess === 'function') onUploadSuccess(data);
-      } else {
+        setTimeout(() => { fetchAll(); }, 800);
+      }
+      else {
         setAlert('❌ Sync failed: ' + (data.error || 'Unknown'), 'error');
       }
     } catch (err) {

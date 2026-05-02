@@ -41,24 +41,39 @@ function saveConfig() {
 }
 
 // ================= FETCH FILE =================
+// ================= FETCH FILE =================
 async function fetchExcelFromUrl(url) {
   try {
     console.log('[Live Tracker] Fetching:', url);
 
-    const freshUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+    // Strip old cache-buster then add fresh one
+    const baseUrl = url.replace(/[&?]t=\d+/, '').replace(/[&?]_cb=\d+/, '');
+    const freshUrl = baseUrl + (baseUrl.includes('?') ? '&' : '?') + '_cb=' + Date.now();
+
     const response = await axios.get(freshUrl, {
-  responseType: 'arraybuffer',
-  timeout: 30000,
-  maxRedirects: 5,
-  headers: {
-    'User-Agent': 'Mozilla/5.0',
-    'Accept': '*/*',
-    'Connection': 'keep-alive',
-    'Cache-Control': 'no-cache',
-  }
+      responseType: 'arraybuffer',
+      timeout: 30000,
+      maxRedirects: 10,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        'Accept': 'text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+      }
     });
 
     const buffer = Buffer.from(response.data);
+
+    // Validate: reject HTML responses (login page or error page)
+    const preview = buffer.slice(0, 200).toString('utf-8');
+    if (preview.trim().startsWith('<!DOCTYPE') || preview.trim().startsWith('<html')) {
+      const err = 'Google returned an HTML page. Make sure the sheet is published via File → Share → Publish to web → CSV.';
+      console.error('[Live Tracker] HTML response — sheet may not be public');
+      config.lastError = err;
+      config.status = 'error';
+      saveConfig();
+      return { ok: false, error: err };
+    }
 
     // Detect file type
     const isCSV = url.includes('output=csv');
@@ -68,28 +83,18 @@ async function fetchExcelFromUrl(url) {
     const filePath = path.join(__dirname, 'data', fileName);
 
     fs.writeFileSync(filePath, buffer);
-
     console.log('[Live Tracker] Saved:', filePath);
 
-    return {
-      ok: true,
-      filePath
-    };
+    return { ok: true, filePath };
 
   } catch (e) {
     console.error('[Live Tracker] FULL ERROR:', e.response?.status, e.message);
-
     config.lastError = e.message;
     config.status = 'error';
     saveConfig();
-
-    return {
-      ok: false,
-      error: 'Fetch failed: ' + e.message
-    };
+    return { ok: false, error: 'Fetch failed: ' + e.message };
   }
 }
-
 // ================= SET URL =================
 function setLiveUrl(url, interval = 300) {
   if (!url) {
