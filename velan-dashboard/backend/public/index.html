@@ -409,7 +409,7 @@ body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100
 </div>
 <script>
 const API = window.location.hostname.includes('localhost')
-  ? '/api'
+  ? 'http://localhost:3001/api'
   : '/api';
 const WS = window.location.hostname.includes('localhost')
   ? 'ws://localhost:3001'
@@ -981,7 +981,7 @@ function Upload({ onUploadSuccess }) {
 
   const fetchTrackerStatus = async () => {
     try {
-      const res = await fetch('${window.location.origin}/api/live-tracker/status');
+      const res = await fetch('/api/live-tracker/status');
       const data = await res.json();
       if (data.url) setLiveUrl(data.url);
       if (data.interval) setRefreshInterval(data.interval);
@@ -994,7 +994,7 @@ function Upload({ onUploadSuccess }) {
 
   const fetchUploads = async () => {
     try {
-      const res = await fetch('${window.location.origin}/api/uploads');
+      const res = await fetch('/api/uploads');
       const data = await res.json();
       if (data.ok) {
         setUploads(data.pdfs || []);
@@ -1031,7 +1031,7 @@ function Upload({ onUploadSuccess }) {
     formData.append('file', file);
 
     try {
-      const res = await fetch('${window.location.origin}/api/upload', {
+      const res = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
@@ -1089,7 +1089,7 @@ function Upload({ onUploadSuccess }) {
       return;
     }
     try {
-      const res = await fetch('${window.location.origin}/api/live-tracker/set-url', {
+      const res = await fetch('/api/live-tracker/set-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: liveUrl, interval: refreshInterval }),
@@ -1109,7 +1109,7 @@ function Upload({ onUploadSuccess }) {
 
   const handleStartSync = async () => {
     try {
-      const res = await fetch('${window.location.origin}/api/live-tracker/start', {
+      const res = await fetch('/api/live-tracker/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -1128,7 +1128,7 @@ function Upload({ onUploadSuccess }) {
 
   const handleStopSync = async () => {
     try {
-      const res = await fetch('${window.location.origin}/api/live-tracker/stop', {
+      const res = await fetch('/api/live-tracker/stop', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -1149,7 +1149,7 @@ function Upload({ onUploadSuccess }) {
     try {
       setMessage('Syncing live source...');
       setMessageType('');
-      const res = await fetch('${window.location.origin}/api/live-tracker/sync-now', {
+      const res = await fetch('/api/live-tracker/sync-now', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
