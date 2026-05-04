@@ -82,8 +82,12 @@ function kpiSummary(items, orders) {
   const withVend  = items.filter(i => i.location === 'WITH VENDOR').length;
   const bn = bottlenecks(items).filter(b => b.is_bottleneck);
 
-  const MAY5 = new Date('2025-05-05');
-  const daysLeft = Math.round((MAY5 - Date.now()) / 86400000);
+  const maxDwellHours = items.reduce(function(max, i) {
+    var h = Number(i.dwell_hours);
+    return !isNaN(h) && h > max ? h : max;
+  }, 0);
+  const highestOverdueDays = Math.floor(maxDwellHours / 24);
+  const daysLeft = -highestOverdueDays;
 
   return { total, inprog, done, withVend,
            bottleneck_count: bn.length,
