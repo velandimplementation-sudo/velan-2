@@ -336,6 +336,10 @@ body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100
         <button class="btn" id="fAll"     onclick="setFilter('ALL')">All</button>
         <button class="btn" id="fInhouse" onclick="setFilter('INHOUSE')">Inhouse</button>
         <button class="btn" id="fVendor"  onclick="setFilter('VENDOR')">Vendor</button>
+        <select class="search-inp" id="dwellFilter" onchange="setDwellFilter(this.value)">
+          <option value="ALL">Dwell: All</option>
+          <option value="1-40">Dwell: 1-40 days</option>
+        </select>
         <span class="item-count" id="itemCount"></span>
       </div>
       <div class="table-wrap">
@@ -417,6 +421,7 @@ const WS = window.location.hostname.includes('localhost')
 var DATA = { kpi:{}, stages:[], bottlenecks:[], orders:[], vendors:[], items:[] };
 var activeFilter = 'ALL';
 var activeStage  = null;
+var activeDwell  = 'ALL';
 var ws = null;
 
 /* ── helpers ─────────────────────────────────────── */
@@ -640,7 +645,7 @@ function renderPipeline() {
 
 /* ── BOTTLENECK ──────────────────────────────────── */
 function renderBN() {
-  var critical = DATA.bottlenecks.filter(function(b){ return b.avg_dwell_hours > 72; });
+  var critical = DATA.bottlenecks.filter(function(b){ return b.stage !== 'STOCK' && b.avg_dwell_hours > 72; });
   var max = Math.max.apply(null, critical.map(function(b){ return b.avg_dwell_hours; }).concat([1]));
   document.getElementById('bnSummaryTag').textContent = critical.length + ' critical stages';
 
@@ -836,6 +841,13 @@ function applyFilters() {
     });
   }
 
+  // ✅ DWELL FILTER
+  if (activeDwell === '1-40') {
+    items = items.filter(function(i) {
+      return typeof i.dwell_hours === 'number' && i.dwell_hours >= 1 && i.dwell_hours <= 40;
+    });
+  }
+
   // ✅ SEARCH
   if (q) {
   items = items.filter(function(i){
@@ -933,6 +945,11 @@ function setFilter(type) {
   activeFilter = type;
   applyFilters();
   updateFilterBtns();
+}
+
+function setDwellFilter(value) {
+  activeDwell = value;
+  applyFilters();
 }
 
 function toggleStage(stage) {
