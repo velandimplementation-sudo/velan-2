@@ -31,6 +31,38 @@ function excelToDate(serial) {
   return new Date((serial - 25569) * 86400 * 1000);
 }
 
+const BUSINESS_HOLIDAYS = [
+  '2026-01-01','2026-01-15','2026-01-16','2026-01-17',
+  '2026-01-26','2026-04-14','2026-05-01','2026-08-15',
+  '2026-09-14','2026-10-02','2026-10-19','2026-11-09'
+];
+
+function formatYMD(date) {
+  return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+}
+
+function isBusinessDay(date) {
+  const day = date.getDay();
+  if (day === 0) return false; // Sunday is holiday
+  return !BUSINESS_HOLIDAYS.includes(formatYMD(date));
+}
+
+function businessHoursBetween(start, end) {
+  if (!start || !end || start >= end) return 0;
+  let hours = 0;
+  const current = new Date(start);
+  while (current < end) {
+    const next = new Date(current);
+    next.setHours(current.getHours() + 1, 0, 0, 0);
+    if (next > end) next.setTime(end.getTime());
+    if (isBusinessDay(current)) {
+      hours += (next.getTime() - current.getTime()) / 3600000;
+    }
+    current.setTime(next.getTime());
+  }
+  return Math.round(hours * 10) / 10;
+}
+
 function cleanLocation(raw) {
   if (!raw) return 'INHOUSE';
   const s = String(raw).trim().toUpperCase().replace(/\s+/g,'');
@@ -94,7 +126,7 @@ function parseProject2(filePath) {
 
     const ts        = row[COL.TIMESTAMP];
     const timestamp = excelToDate(ts);
-    const dwell_h = timestamp ? Math.max(0, Math.round(((Date.now()-timestamp.getTime())/3600000)*10)/10) : null;
+    const dwell_h = timestamp ? businessHoursBetween(timestamp, new Date()) : null;
     const location  = cleanLocation(row[COL.LOCATION]);
     const sae       = matchSAEChain(product);
 
