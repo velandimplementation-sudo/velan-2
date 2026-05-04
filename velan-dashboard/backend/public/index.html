@@ -343,10 +343,10 @@ body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100
           <thead>
             <tr>
               <th>Component</th><th>Order</th><th>Customer</th><th>QTY</th>
-              <th>Stage</th><th>Location</th><th>Dwell</th><th>SAE Progress</th><th>Status</th>
+              <th>Stage</th><th>Location</th><th>Dwell</th><th>Status</th>
             </tr>
           </thead>
-          <tbody id="mainBody"><tr><td colspan="9"><div class="spin-wrap"><div class="spin"></div></div></td></tr></tbody>
+          <tbody id="mainBody"><tr><td colspan="8"><div class="spin-wrap"><div class="spin"></div></div></td></tr></tbody>
         </table>
       </div>
     </div>
@@ -644,15 +644,15 @@ function renderPipeline() {
 
 /* ── BOTTLENECK ──────────────────────────────────── */
 function renderBN() {
-  var max = Math.max.apply(null, DATA.bottlenecks.map(function(b){ return b.avg_dwell_hours; }).concat([1]));
-  var hotCount = DATA.bottlenecks.filter(function(b){ return b.is_bottleneck; }).length;
-  document.getElementById('bnSummaryTag').textContent = hotCount + ' critical stages';
+  var critical = DATA.bottlenecks.filter(function(b){ return b.avg_dwell_hours > 72; });
+  var max = Math.max.apply(null, critical.map(function(b){ return b.avg_dwell_hours; }).concat([1]));
+  document.getElementById('bnSummaryTag').textContent = critical.length + ' critical stages';
 
-  document.getElementById('bnList').innerHTML = DATA.bottlenecks.map(function(b) {
+  document.getElementById('bnList').innerHTML = critical.map(function(b) {
     var pct = Math.round(b.avg_dwell_hours / max * 100);
-    var col = b.avg_dwell_hours > 72 ? 'var(--danger)' : b.avg_dwell_hours > 24 ? 'var(--warn)' : 'var(--acc)';
-    var badgeCls = b.avg_dwell_hours > 72 ? 'badge-hot' : b.is_bottleneck ? 'badge-warn' : 'badge-ok';
-    var badgeTxt = b.avg_dwell_hours > 72 ? 'CRITICAL' : b.is_bottleneck ? 'WATCH' : 'OK';
+    var col = 'var(--danger)';
+    var badgeCls = 'badge-hot';
+    var badgeTxt = 'CRITICAL';
     return '<div class="bn-item">'
       + '<div class="bn-top">'
       + '<span class="bn-name">' + b.stage + '</span>'
@@ -662,7 +662,7 @@ function renderBN() {
       + '</div></div>'
       + '<div class="bn-bar-bg"><div class="bn-bar-fill" style="width:' + pct + '%;background:' + col + '"></div></div>'
       + '</div>';
-  }).join('') || '<div class="empty">No bottlenecks</div>';
+  }).join('') || '<div class="empty">No critical stages</div>';
 }
 
 /* ── ORDERS ──────────────────────────────────────── */
@@ -680,7 +680,6 @@ function renderOrders() {
         + '<td>' + opBadge(i.current_op) + '</td>'
         + '<td>' + locBadge(i.location) + '</td>'
         + '<td>' + fmtDwell(i.dwell_hours) + '</td>'
-        + '<td>' + saeProg(i.progress) + '</td>'
         + '</tr>';
     }).join('');
 
@@ -703,7 +702,7 @@ function renderOrders() {
       + '<div class="ostat"><div class="l">Risk</div><div class="v" style="color:' + rc + '">' + o.risk + '</div></div>'
       + '</div>'
       + '<div style="overflow:auto">'
-      + '<table class="tbl"><thead><tr><th>Component</th><th>QTY</th><th>Stage</th><th>Location</th><th>Dwell</th><th>Process</th></tr></thead>'
+      + '<table class="tbl"><thead><tr><th>Component</th><th>QTY</th><th>Stage</th><th>Location</th><th>Dwell</th></tr></thead>'
       + '<tbody>' + rows + '</tbody></table>'
       + '</div>'
       + '</div></div>';
@@ -890,8 +889,6 @@ function applyFilters() {
         + '<td>' + locBadge(i.location) + '</td>'
 
         + '<td>' + fmtDwell(i.dwell_hours) + '</td>'
-
-        + '<td>' + saeProg(i.progress) + '</td>'
 
         + '<td style="font-size:10px;color:var(--t3);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'
           + status + '">' + status + '</td>'
