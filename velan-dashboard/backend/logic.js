@@ -1,6 +1,6 @@
 'use strict';
 
-const DONE_OPS = ['ASS','READY','STORES','STOCK'];
+const DONE_OPS = ['READY','STORES','STOCK'];
 const VENDOR_THRESHOLD_H = 48;
 
 function stagePipeline(items) {
@@ -45,16 +45,13 @@ function orderSummary(items) {
         customer:      i.customer,
         po_date:       i.po_date,
         delivery_note: i.delivery_note,
-        total: 0, done: 0, vendor: 0, blocked: 0, rework: 0,
-        max_days_remaining: 0,
+        total: 0, done: 0, vendor: 0, max_days_remaining: 0,
       };
     }
     const o = byOrder[key];
     o.total++;
     if (DONE_OPS.includes(i.current_op)) o.done++;
     if (i.location === 'WITH VENDOR') o.vendor++;
-    if (i.is_blocked) o.blocked++;
-    if (i.is_rework)  o.rework++;
     if (i.progress && i.progress.days_remaining > o.max_days_remaining)
       o.max_days_remaining = i.progress.days_remaining;
   });
@@ -78,27 +75,22 @@ function vendorItems(items) {
     .sort((a, b) => (b.dwell_hours || 0) - (a.dwell_hours || 0));
 }
 
-function blockedItems(items) {
-  return items.filter(i => i.is_blocked || i.is_rework);
-}
-
 function kpiSummary(items, orders) {
   const total     = items.length;
   const inprog    = items.filter(i => !DONE_OPS.includes(i.current_op)).length;
   const done      = items.filter(i => DONE_OPS.includes(i.current_op)).length;
   const withVend  = items.filter(i => i.location === 'WITH VENDOR').length;
-  const blocked   = items.filter(i => i.is_blocked).length;
-  const rework    = items.filter(i => i.is_rework).length;
   const bn = bottlenecks(items).filter(b => b.is_bottleneck);
 
   const MAY5 = new Date('2025-05-05');
   const daysLeft = Math.round((MAY5 - Date.now()) / 86400000);
 
-  return { total, inprog, done, withVend, blocked, rework,
+  return { total, inprog, done, withVend,
            bottleneck_count: bn.length,
            top_bottleneck: bn[0]?.stage || null,
            days_to_may5: daysLeft,
            active_orders: orders.length };
 }
 
-module.exports = { stagePipeline, bottlenecks, orderSummary, vendorItems, blockedItems, kpiSummary };
+module.exports = { stagePipeline, bottlenecks, orderSummary, vendorItems, kpiSummary };
+

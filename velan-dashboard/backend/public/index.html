@@ -594,9 +594,6 @@ function renderAlerts() {
     var top = bns[0];
     showAlert('<strong>BOTTLENECK:</strong> ' + top.stage + ' — ' + top.item_count + ' items, avg ' + top.avg_dwell_hours + 'h dwell' + (bns.length > 1 ? ' <span style="color:var(--t3)">+ ' + (bns.length - 1) + ' more stages</span>' : ''), 'danger');
   }
-  DATA.items.filter(function(i){ return i.is_blocked; }).forEach(function(b) {
-    showAlert('<strong>PROCUREMENT NEEDED:</strong> ' + b.product_name + ' (' + b.customer + ') — ' + (b.status2 || 'TO BE ORDERED'), 'warning');
-  });
 }
 
 /* ── KPI ─────────────────────────────────────────── */
@@ -612,7 +609,6 @@ function renderKPI() {
     ['c-acc',   'var(--acc)',     'Completed',        k.done,                  k.inprog + ' still in progress'],
     ['c-acc3',  'var(--acc3)',    'With Vendor',      k.withVend,              'external processing'],
     ['c-danger','var(--danger)', 'Bottleneck Stages', k.bottleneck_count,      'top: ' + (k.top_bottleneck || '—')],
-    ['c-warn',  'var(--warn)',   'Blocked / Rework',  k.blocked + k.rework,   k.blocked + ' blocked, ' + k.rework + ' rework'],
     [daysCls,   daysBg,          'Delivery',          days,                    daysStr],
   ].map(function(d) {
     return '<div class="kpi"><div class="kpi-accent" style="background:' + d[1] + '"></div>'
@@ -671,11 +667,8 @@ function renderOrders() {
     var rc = riskColor(o.risk);
     var items = DATA.items.filter(function(i){ return String(i.order_id) === String(o.order_id); });
     var rows = items.slice(0, 40).map(function(i) {
-      return '<tr class="' + (i.is_blocked ? 'row-blocked' : i.is_rework ? 'row-rework' : '') + '">'
-        + '<td style="font-size:11px">' + i.product_name
-          + (i.is_blocked ? '<span class="tag-flag tag-blocked">BLOCKED</span>' : '')
-          + (i.is_rework  ? '<span class="tag-flag tag-rework">REWORK</span>' : '')
-          + '</td>'
+      return '<tr>'
+        + '<td style="font-size:11px">' + i.product_name + '</td>'
         + '<td style="font-family:var(--mono);font-size:10px;color:var(--t3)">' + i.qty + '</td>'
         + '<td>' + opBadge(i.current_op) + '</td>'
         + '<td>' + locBadge(i.location) + '</td>'
@@ -698,7 +691,6 @@ function renderOrders() {
       + '<div class="ostat"><div class="l">Done</div><div class="v" style="color:var(--acc)">' + o.done + '</div></div>'
       + '<div class="ostat"><div class="l">WIP</div><div class="v" style="color:var(--warn)">' + o.wip + '</div></div>'
       + '<div class="ostat"><div class="l">Vendor</div><div class="v" style="color:var(--acc3)">' + o.vendor + '</div></div>'
-      + (o.blocked ? '<div class="ostat"><div class="l">Blocked</div><div class="v" style="color:var(--danger)">' + o.blocked + '</div></div>' : '')
       + '<div class="ostat"><div class="l">Risk</div><div class="v" style="color:' + rc + '">' + o.risk + '</div></div>'
       + '</div>'
       + '<div style="overflow:auto">'
@@ -867,12 +859,10 @@ function applyFilters() {
       var po = escapeHTML(i.po_number || '–');
       var status = escapeHTML(i.status2 || i.status1 || '—');
 
-      return '<tr class="' + (i.is_blocked ? 'row-blocked' : i.is_rework ? 'row-rework' : '') + '">'
+      return '<tr>'
 
         + '<td style="font-size:11px;white-space:nowrap">'
           + product
-          + (i.is_blocked ? '<span class="tag-flag tag-blocked">BLOCKED</span>' : '')
-          + (i.is_rework  ? '<span class="tag-flag tag-rework">REWORK</span>'  : '')
           + '</td>'
 
         + '<td style="font-family:var(--mono);font-size:10px;color:var(--acc2)">'

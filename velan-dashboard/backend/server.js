@@ -9,7 +9,7 @@ const fs       = require('fs');
 const multer   = require('multer');
 const { WebSocketServer } = require('ws');
 const { parseProject2 }  = require('./parser');
-const { stagePipeline, bottlenecks, orderSummary, vendorItems, blockedItems, kpiSummary } = require('./logic');
+const { stagePipeline, bottlenecks, orderSummary, vendorItems, kpiSummary } = require('./logic');
 const liveTracker = require('./liveTracker');
 const app    = express();
 app.use(express.json());
@@ -213,7 +213,6 @@ app.get('/api/items',  function(req,res){
   if(req.query.op)       r=r.filter(function(i){ return i.current_op===req.query.op; });
   if(req.query.po)       r=r.filter(function(i){ return String(i.order_id)===req.query.po; });
   if(req.query.location) r=r.filter(function(i){ return i.location===req.query.location; });
-  if(req.query.blocked)  r=r.filter(function(i){ return i.is_blocked; });
   if(req.query.search){
     var q=req.query.search.toLowerCase();
     r=r.filter(function(i){ return (i.product_name||'').toLowerCase().includes(q)||(i.customer||'').toLowerCase().includes(q)||String(i.po_number||'').toLowerCase().includes(q); });
@@ -224,7 +223,6 @@ app.get('/api/stages',      function(_,res){ res.json(stagePipeline(ITEMS)); });
 app.get('/api/bottlenecks', function(_,res){ res.json(bottlenecks(ITEMS)); });
 app.get('/api/orders',      function(_,res){ res.json(ORDERS); });
 app.get('/api/vendors',     function(_,res){ res.json(vendorItems(ITEMS)); });
-app.get('/api/blocked',     function(_,res){ res.json(blockedItems(ITEMS)); });
 app.post('/api/refresh',    function(_,res){ reload(); res.json({ ok:true, count:ITEMS.length, ts:LAST_LOADED }); });
 
 // Upload endpoint
