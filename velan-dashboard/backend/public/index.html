@@ -843,7 +843,7 @@ function applyFilters() {
   if (!isNaN(dwellVal)) {
     items = items.filter(function(i) {
       var dwell = Number(i.dwell_hours);
-      return !isNaN(dwell) && Math.floor(dwell) === dwellVal;
+      return !isNaN(dwell) && Math.floor(dwell / 24) === dwellVal;
     });
   }
 
@@ -857,7 +857,7 @@ function applyFilters() {
         || String(i.po_number || '').toLowerCase().includes(q)
         || (i.current_op || '').toLowerCase().includes(q)
         || (i.location || '').toLowerCase().includes(q)
-        || (!isNaN(dwellQuery) && !isNaN(dwell) && Math.floor(dwell) === dwellQuery);
+        || (!isNaN(dwellQuery) && !isNaN(dwell) && Math.floor(dwell / 24) === dwellQuery);
     });
   }
   // ✅ COUNT
