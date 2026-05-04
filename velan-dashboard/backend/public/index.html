@@ -935,6 +935,12 @@ function setFilter(type) {
   updateFilterBtns();
 }
 
+function toggleStage(stage) {
+  activeStage = activeStage === stage ? null : stage;
+  applyFilters();
+  renderPipeline();
+}
+
 function updateFilterBtns() {
   document.getElementById('fAll').classList.toggle('active', activeFilter === 'ALL');
   document.getElementById('fInhouse').classList.toggle('active', activeFilter === 'INHOUSE');
