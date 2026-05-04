@@ -336,10 +336,7 @@ body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100
         <button class="btn" id="fAll"     onclick="setFilter('ALL')">All</button>
         <button class="btn" id="fInhouse" onclick="setFilter('INHOUSE')">Inhouse</button>
         <button class="btn" id="fVendor"  onclick="setFilter('VENDOR')">Vendor</button>
-        <select class="search-inp" id="dwellFilter" onchange="setDwellFilter(this.value);">
-          <option value="ALL">Dwell: All</option>
-          <option value="1-40">Dwell: 1-40 days</option>
-        </select>
+        <input class="search-inp" id="dwellFilter" type="number" min="0" step="1" placeholder="Dwell days" aria-label="Dwell days filter" title="Filter by dwell days" oninput="setDwellFilter(this.value)">
         <span class="item-count" id="itemCount"></span>
       </div>
       <div class="table-wrap">
@@ -421,7 +418,7 @@ const WS = window.location.hostname.includes('localhost')
 var DATA = { kpi:{}, stages:[], bottlenecks:[], orders:[], vendors:[], items:[] };
 var activeFilter = 'ALL';
 var activeStage  = null;
-var activeDwell  = 'ALL';
+var activeDwell  = '';
 var ws = null;
 
 /* ── helpers ─────────────────────────────────────── */
@@ -842,9 +839,10 @@ function applyFilters() {
   }
 
   // ✅ DWELL FILTER
-  if (activeDwell === '1-40') {
+  var dwellVal = parseInt(activeDwell, 10);
+  if (!isNaN(dwellVal)) {
     items = items.filter(function(i) {
-      return typeof i.dwell_hours === 'number' && i.dwell_hours >= 1 && i.dwell_hours <= 40;
+      return typeof i.dwell_hours === 'number' && Math.floor(i.dwell_hours) === dwellVal;
     });
   }
 
