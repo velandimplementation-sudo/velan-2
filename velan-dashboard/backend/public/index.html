@@ -844,22 +844,36 @@ function filterByVendor(name) {
   // DWELL FILTER
   var dwellVal = parseInt(activeDwell, 10);
 
-  if (!isNaN(dwellVal)) {
+  if (activeDwell !== '') {
 
-    items = items.filter(function(i) {
+  items = items.filter(function(i) {
 
-      // HIDE STOCK/READY/STORES FROM DWELL SEARCH
-      if (['STOCK','STORES','READY'].includes(i.current_op)) {
-        return false;
-      }
+    // REMOVE STOCK/STORES/READY
+    if (['STOCK','STORES','READY'].includes(i.current_op)) {
+      return false;
+    }
 
-      var dwell = Number(i.dwell_hours);
+    var dwell = Number(i.dwell_hours);
 
-      return !isNaN(dwell) &&
-        Math.floor(dwell / 24) === dwellVal;
+    if (isNaN(dwell)) {
+      return false;
+    }
 
-    });
-  }
+    var days = Math.floor(dwell / 24);
+
+    // SUPPORT 3+
+    if (String(activeDwell).includes('+')) {
+
+      var minDays = parseInt(activeDwell);
+
+      return days >= minDays;
+    }
+
+    // NORMAL EXACT MATCH
+    return days === parseInt(activeDwell);
+
+  });
+}
 
   // SEARCH
   if (q) {
