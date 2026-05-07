@@ -839,13 +839,18 @@ function applyFilters() {
   }
 
   // ✅ DWELL FILTER
-  var dwellVal = parseInt(activeDwell, 10);
   if (!isNaN(dwellVal)) {
-    items = items.filter(function(i) {
-      var dwell = Number(i.dwell_hours);
-      return !isNaN(dwell) && Math.floor(dwell / 24) === dwellVal;
-    });
-  }
+  items = items.filter(function(i) {
+
+    if (['STOCK','STORES','READY'].includes(i.current_op)) {
+      return false;
+    }
+
+    var dwell = Number(i.dwell_hours);
+
+    return !isNaN(dwell) && Math.floor(dwell / 24) === dwellVal;
+  });
+}
 
   // ✅ SEARCH
   if (q) {
@@ -857,7 +862,12 @@ function applyFilters() {
         || String(i.po_number || '').toLowerCase().includes(q)
         || (i.current_op || '').toLowerCase().includes(q)
         || (i.location || '').toLowerCase().includes(q)
-        || (!isNaN(dwellQuery) && !isNaN(dwell) && Math.floor(dwell / 24) === dwellQuery);
+        || (
+     !['STOCK','STORES','READY'].includes(i.current_op)
+     && !isNaN(dwellQuery)
+     && !isNaN(dwell)
+     && Math.floor(dwell / 24) === dwellQuery
+   );
     });
   }
   // ✅ COUNT
@@ -892,7 +902,13 @@ function applyFilters() {
 
         + '<td>' + locBadge(i.location) + '</td>'
 
-        + '<td>' + fmtDwell(i.dwell_hours) + '</td>'
+        + '<td>' 
+          + (
+            ['STOCK','STORES','READY'].includes(i.current_op)
+            ? ''
+            : fmtDwell(i.dwell_hours)
+          )
+          + '</td>'
 
         + '<td style="font-size:10px;color:var(--t3);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'
           + status + '">' + status + '</td>'
