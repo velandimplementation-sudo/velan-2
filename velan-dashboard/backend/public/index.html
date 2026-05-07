@@ -809,85 +809,105 @@ function filterByVendor(name) {
   applyFilters();
 }
 /* ── MAIN TABLE ──────────────────────────────────── */
-function applyFilters() {
+  function applyFilters() {
+
   var q = (document.getElementById('searchInp').value || '').toLowerCase();
+
   var items = (DATA.items || []).slice();
 
   console.log('Filter:', activeFilter, 'Stage:', activeStage);
 
-  // ✅ ALWAYS normalize filter
+  // FILTER TYPE
   var filter = (activeFilter || 'ALL').toUpperCase();
 
-  // ✅ FILTER LOGIC (STRICT MATCH — matches backend)
+  // INHOUSE FILTER
   if (filter === 'INHOUSE') {
     items = items.filter(function(i) {
       return i.location === 'INHOUSE';
     });
   }
 
+  // VENDOR FILTER
   if (filter === 'VENDOR') {
     items = items.filter(function(i) {
       return i.location === 'WITH VENDOR';
     });
   }
 
-  // ✅ STAGE FILTER (independent)
+  // STAGE FILTER
   if (activeStage) {
     items = items.filter(function(i) {
       return i.current_op === activeStage;
     });
   }
 
-  // ✅ DWELL FILTER
+  // DWELL FILTER
+  var dwellVal = parseInt(activeDwell, 10);
+
   if (!isNaN(dwellVal)) {
-  items = items.filter(function(i) {
 
-    if (['STOCK','STORES','READY'].includes(i.current_op)) {
-      return false;
-    }
+    items = items.filter(function(i) {
 
-    var dwell = Number(i.dwell_hours);
+      // HIDE STOCK/READY/STORES FROM DWELL SEARCH
+      if (['STOCK','STORES','READY'].includes(i.current_op)) {
+        return false;
+      }
 
-    return !isNaN(dwell) && Math.floor(dwell / 24) === dwellVal;
-  });
-}
+      var dwell = Number(i.dwell_hours);
 
-  // ✅ SEARCH
+      return !isNaN(dwell) &&
+        Math.floor(dwell / 24) === dwellVal;
+
+    });
+  }
+
+  // SEARCH
   if (q) {
 
-  var dwellQuery = parseInt(q, 10);
+    var dwellQuery = parseInt(q, 10);
 
-  items = items.filter(function(i){
+    items = items.filter(function(i){
 
-    var dwell = Number(i.dwell_hours);
+      var dwell = Number(i.dwell_hours);
 
-    var dwellMatch =
-      !['STOCK','STORES','READY'].includes(i.current_op) &&
-      !isNaN(dwellQuery) &&
-      !isNaN(dwell) &&
-      Math.floor(dwell / 24) === dwellQuery;
+      var dwellMatch =
+        !['STOCK','STORES','READY'].includes(i.current_op) &&
+        !isNaN(dwellQuery) &&
+        !isNaN(dwell) &&
+        Math.floor(dwell / 24) === dwellQuery;
 
-    return (i.product_name || '').toLowerCase().includes(q)
-      || (i.customer || '').toLowerCase().includes(q)
-      || String(i.po_number || '').toLowerCase().includes(q)
-      || (i.current_op || '').toLowerCase().includes(q)
-      || (i.location || '').toLowerCase().includes(q)
-      || dwellMatch;
+      return (i.product_name || '').toLowerCase().includes(q)
+        || (i.customer || '').toLowerCase().includes(q)
+        || String(i.po_number || '').toLowerCase().includes(q)
+        || (i.current_op || '').toLowerCase().includes(q)
+        || (i.location || '').toLowerCase().includes(q)
+        || dwellMatch;
 
-  });
-}
-// ✅ COUNT
+    });
+  }
+
+  // COUNT
   document.getElementById('itemCount').textContent =
     items.length + ' items (showing ' + Math.min(items.length, 200) + ')';
 
-  // ✅ RENDER
+  // TABLE RENDER
   document.getElementById('mainBody').innerHTML =
+
     items.slice(0, 200).map(function(i) {
 
       var product = escapeHTML(i.product_name || '');
+
       var customer = escapeHTML(i.customer || '');
+
       var po = escapeHTML(i.po_number || '–');
+
       var status = escapeHTML(i.status2 || i.status1 || '—');
+
+      // HIDE DWELL FOR STOCK/STORES/READY
+      var dwellDisplay =
+        ['STOCK','STORES','READY'].includes(i.current_op)
+          ? ''
+          : fmtDwell(i.dwell_hours);
 
       return '<tr>'
 
@@ -908,49 +928,19 @@ function applyFilters() {
 
         + '<td>' + locBadge(i.location) + '</td>'
 
-        + '<td>' 
-          + (
-            ['STOCK','STORES','READY'].includes(i.current_op)
-            ? ''
-            : fmtDwell(i.dwell_hours)
-          )
-          + '</td>'
+        + '<td>' + dwellDisplay + '</td>'
 
         + '<td style="font-size:10px;color:var(--t3);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'
           + status + '">' + status + '</td>'
 
         + '</tr>';
 
-    }).join('') ||
+    }).join('')
+
+    ||
 
     '<tr><td colspan="9"><div class="empty">No items match filter</div></td></tr>';
 }
-/* ── DWELL TICK ──────────────────────────────────── */
-setInterval(function() {
-  DATA.items = DATA.items.map(function(i) {
-    if (!i.timestamp) return i;
-    var copy = Object.assign({}, i);
-    copy.dwell_hours = Math.round(((Date.now() - new Date(i.timestamp).getTime()) / 3600000) * 10) / 10;
-    return copy;
-  });
-
-  DATA.vendors = DATA.vendors.map(function(v) {
-    if (!v.timestamp) return v;
-    var copy = Object.assign({}, v);
-    copy.dwell_hours = Math.round(((Date.now() - new Date(v.timestamp).getTime()) / 3600000) * 10) / 10;
-    copy.overdue = copy.dwell_hours > 48;
-    return copy;
-  });
-
-  applyFilters();
-  renderVendors();
-
-  // ✅ ADD THIS PART
-  if (document.getElementById('vendorView').style.display !== 'none') {
-    renderVendorModule();
-  }
-
-}, 60000);
 /* ── RENDER ALL ──────────────────────────────────── */
 function renderAll() {
   renderKPI();
