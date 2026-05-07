@@ -336,7 +336,7 @@ body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100
         <button class="btn" id="fAll"     onclick="setFilter('ALL')">All</button>
         <button class="btn" id="fInhouse" onclick="setFilter('INHOUSE')">Inhouse</button>
         <button class="btn" id="fVendor"  onclick="setFilter('VENDOR')">Vendor</button>
-        <input class="search-inp" id="dwellFilter" type="number" min="0" step="1" placeholder="Dwell days" aria-label="Dwell days filter" title="Filter by dwell days" oninput="setDwellFilter(this.value)">
+        <input class="search-inp" id="dwellFilter" type="text" min="0" step="1" placeholder="Dwell days" aria-label="Dwell days filter" title="Filter by dwell days" oninput="setDwellFilter(this.value)">
         <span class="item-count" id="itemCount"></span>
       </div>
       <div class="table-wrap">
