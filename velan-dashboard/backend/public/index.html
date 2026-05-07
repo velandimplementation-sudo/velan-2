@@ -854,23 +854,29 @@ function applyFilters() {
 
   // ✅ SEARCH
   if (q) {
-    var dwellQuery = parseInt(q, 10);
-    items = items.filter(function(i){
-      var dwell = Number(i.dwell_hours);
-      return (i.product_name || '').toLowerCase().includes(q)
-        || (i.customer || '').toLowerCase().includes(q)
-        || String(i.po_number || '').toLowerCase().includes(q)
-        || (i.current_op || '').toLowerCase().includes(q)
-        || (i.location || '').toLowerCase().includes(q)
-        || (
-     !['STOCK','STORES','READY'].includes(i.current_op)
-     && !isNaN(dwellQuery)
-     && !isNaN(dwell)
-     && Math.floor(dwell / 24) === dwellQuery
-   );
-    });
-  }
-  // ✅ COUNT
+
+  var dwellQuery = parseInt(q, 10);
+
+  items = items.filter(function(i){
+
+    var dwell = Number(i.dwell_hours);
+
+    var dwellMatch =
+      !['STOCK','STORES','READY'].includes(i.current_op) &&
+      !isNaN(dwellQuery) &&
+      !isNaN(dwell) &&
+      Math.floor(dwell / 24) === dwellQuery;
+
+    return (i.product_name || '').toLowerCase().includes(q)
+      || (i.customer || '').toLowerCase().includes(q)
+      || String(i.po_number || '').toLowerCase().includes(q)
+      || (i.current_op || '').toLowerCase().includes(q)
+      || (i.location || '').toLowerCase().includes(q)
+      || dwellMatch;
+
+  });
+}
+// ✅ COUNT
   document.getElementById('itemCount').textContent =
     items.length + ' items (showing ' + Math.min(items.length, 200) + ')';
 
